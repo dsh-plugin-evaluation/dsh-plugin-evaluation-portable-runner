@@ -1,0 +1,44 @@
+name: Publish npm package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-portable-runner-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          package_version="$(node -p "require('./package.json').version")"
+          test "$tag_version" = "$package_version" || {
+            echo "Tag v$tag_version does not match package.json version $package_version" >&2
+            exit 1
+          }
+
+      - name: Install dependencies
+        run: npm install --package-lock=false --ignore-scripts --no-audit --no-fund
+
+      - name: Verify package
+        run: npm run verify
+
+      - name: Publish package
+        run: npm publish --access public --provenance
