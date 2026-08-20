@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, resolve, sep } from 'node:path'
+import { randomUUID } from 'node:crypto'
 
 function check(id, passed, reason) {
   return reason ? { id, passed, reason } : { id, passed }
@@ -56,7 +57,7 @@ function evaluateAssertions(assertions, output) {
   })
 }
 
-export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {} } = {}) {
+export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {}, provenance = {} } = {}) {
   if (!plan || typeof plan !== 'object') throw new Error('portable case plan is required')
   if (typeof runPlugin !== 'function') throw new Error('portable case plan runPlugin is required')
   if (!plan.run || plan.run.op !== 'plugin.prompt' || typeof plan.run.input !== 'string' || !plan.run.input) {
@@ -72,6 +73,7 @@ export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {
   const root = await mkdtemp(resolve(tmpdir(), 'dsh-portable-case-'))
   const environment = { ...baseEnvironment }
   const startedAt = Date.now()
+  const runId = randomUUID()
   try {
     await setupPlan(root, plan, environment)
     const execution = await runPlugin({ input: plan.run.input, cwd: root, env: environment })
@@ -83,13 +85,26 @@ export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {
       ...evaluateAssertions(plan.assertions, output),
     ]
     const reasons = checks.filter(item => !item.passed).map(item => item.reason)
+    const status = reasons.length === 0 ? 'passed' : 'failed'
+    const finishedAt = Date.now()
     return {
-      status: reasons.length === 0 ? 'passed' : 'failed',
+      reportSchemaVersion: 1,
+      reportId: runId,
+      runId,
+      status,
       reasons,
       checks,
       actualOutput: output,
       exitCode: execution.exitCode ?? 0,
-      durationMs: Date.now() - startedAt,
+      durationMs: finishedAt - startedAt,
+      startedAt,
+      finishedAt,
+      summary: { status, totalCases: 1, passedCases: status === 'passed' ? 1 : 0, failedCases: status === 'failed' ? 1 : 0 },
+      provenance: {
+        schemeId: plan.id,
+        schemeVersion: plan.schemaVersion,
+        ...provenance,
+      },
     }
   } finally {
     await rm(root, { recursive: true, force: true })
