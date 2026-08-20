@@ -17,10 +17,23 @@ The package is intentionally independent of DSH. A DSH integration or another ho
 ## Install
 
 ```bash
-npm install @dsh-plugin-evaluation/portable-runner
+npm install @dsh-plugin-evaluation/portable-runner@0.1.0
 ```
 
 Node.js 20 or newer is required.
+
+## Release
+
+普通 push 只运行 CI，不会发布 npm。发布新版本时，先更新
+`package.json` 的版本号，再创建并推送同名 tag：
+
+```bash
+npm version patch
+git push origin main --follow-tags
+```
+
+推送 `vX.Y.Z` tag 后，GitHub Actions 会先运行 `npm run verify`，确认 tag
+与 `package.json` 版本一致后，再通过 npm Trusted Publishing 发布包。首次使用前，需要在 npm 包设置中将对应 GitHub 仓库和 `Publish` workflow 配置为 Trusted Publisher。
 
 ## API
 

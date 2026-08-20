@@ -1,6 +1,6 @@
 {
   "name": "@dsh-plugin-evaluation/portable-runner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Host-independent runner for DSH Portable Case Plans",
   "type": "module",
   "main": "./src/index.js",
@@ -12,7 +12,11 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["src/", "README.md", "LICENSE"],
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
