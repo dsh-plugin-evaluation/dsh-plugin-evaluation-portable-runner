@@ -1,0 +1,25 @@
+{
+  "name": "@dsh-plugin-evaluation/portable-runner",
+  "version": "0.1.0",
+  "description": "Host-independent runner for DSH Portable Case Plans",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["src/", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "smoke": "node scripts/smoke.mjs",
+    "verify": "npm test && npm pack --dry-run --json"
+  }
+}
