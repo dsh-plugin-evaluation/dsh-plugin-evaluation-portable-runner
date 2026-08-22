@@ -9,7 +9,7 @@ Portable Case Plans describe a small, deterministic evaluation contract without 
 - creates one temporary workspace per plan;
 - applies the bounded setup operations;
 - invokes a host-provided plugin callback;
-- evaluates output assertions; and
+- evaluates registered metrics; and
 - removes the temporary workspace after execution, including when setup or execution fails.
 
 The package is intentionally independent of DSH. A DSH integration or another host remains responsible for starting a plugin and deciding how credentials and process isolation are provided.
@@ -17,7 +17,7 @@ The package is intentionally independent of DSH. A DSH integration or another ho
 ## Install
 
 ```bash
-npm install @dsh-plugin-evaluation/portable-runner@0.1.0
+npm install @dsh-plugin-evaluation/portable-runner@0.1.6
 ```
 
 Node.js 20 or newer is required.
@@ -37,7 +37,7 @@ git push origin main --follow-tags
 
 ## API
 
-The package exports `runPortableCasePlan`:
+The package exports `runPortableCasePlan` and small builders for reusable suites:
 
 ```js
 import { runPortableCasePlan } from '@dsh-plugin-evaluation/portable-runner'
@@ -52,8 +52,8 @@ const result = await runPortableCasePlan({
       { op: 'workspace.write', path: 'input.txt', content: 'fixture' },
       { op: 'workspace.read', path: 'input.txt' },
     ],
-    run: { op: 'plugin.prompt', input: 'answer' },
-    assertions: [{ op: 'output.equals', value: 'safe' }],
+    steps: [{ op: 'plugin.prompt', input: 'answer' }],
+    metrics: [{ id: 'expected-output', type: 'output.equals', expected: 'safe' }],
   },
   baseEnvironment: { PATH: process.env.PATH ?? '' },
   async runPlugin({ input, cwd, env }) {
@@ -66,6 +66,11 @@ const result = await runPortableCasePlan({
 console.log(result.status)
 ```
 
+`steps` and `metrics` are the recommended plan fields. A plan must contain at
+least one step and one metric. The older `run` plus `assertions` fields are
+accepted for compatibility and normalized before execution, but new plans
+should use the current shape.
+
 The callback receives `{ input, cwd, env }`:
 
 - `input` is the `plugin.prompt` input;
@@ -73,6 +78,142 @@ The callback receives `{ input, cwd, env }`:
 - `env` is a copied environment containing `baseEnvironment` plus plan setup values.
 
 The result contains `status`, structured `checks`, non-sensitive `reasons`, `actualOutput`, `exitCode`, and `durationMs`.
+
+### Suite, fixture, and multi-step execution
+
+`defineSuite`, `defineCase`, and `defineFixture` compose reusable evaluations. A
+case can contain multiple `steps`; repeated `plugin.prompt` steps receive the
+same session object, so hosts can implement multi-turn conversations. Plan
+validation rejects invalid schema versions, IDs, empty steps/metrics, malformed
+prompt steps, and duplicate metric IDs before a workspace is created.
+
+```js
+const suite = defineSuite({
+  id: 'quality',
+  fixtures: [defineFixture({
+    id: 'seed',
+    setup: ({ environment }) => environment.set('EXPECTED', 'safe'),
+  })],
+  cases: [defineCase({
+    id: 'answer',
+    fixtures: ['seed'],
+    steps: [
+      { op: 'plugin.prompt', input: 'first question' },
+      { op: 'plugin.prompt', input: 'follow-up question' },
+    ],
+    metrics: [{ id: 'answer', type: 'output.contains', expected: 'safe' }],
+  })],
+})
+
+const report = await runSuite({ suite, runPlugin, reporters: {
+  json: value => console.log(JSON.stringify(value)),
+} })
+```
+
+Each case returns the same runner-native report shape as
+`runPortableCasePlan`. A suite wraps those case reports and adds suite-level
+summary fields.
+
+### Registered steps and metrics
+
+`createStepRegistry()` adds execution operations without changing the runner
+loop. `createMetricRegistry()` adds checks against the collected evidence.
+Built-in metrics include output equality/containment, timeout, file existence,
+credential-like secret detection, and expected tool calls. Hosts can return
+`timedOut`, `files`, and `toolCalls` from `runPlugin` for those checks.
+
+The runner also exports isolated test adapters: `createMockTools()` records tool
+calls, `createMockNetwork()` serves declared routes and records requests, and
+`createTemporaryDatabase()` provides an in-memory store scoped to one run.
+Evidence includes session messages, tool calls, network requests, workspace
+files, timeout state, and the final execution.
+
+`createReporterRegistry()` provides JSON, Markdown, and JUnit renderers behind
+one interface. Custom reporters can be registered without changing execution.
+
+## Report shape
+
+`runPortableCasePlan` returns a single-case report with these stable fields:
+
+```json
+{
+  "reportSchemaVersion": 1,
+  "reportId": "uuid",
+  "runId": "uuid",
+  "status": "passed",
+  "reasons": [],
+  "checks": [
+    {
+      "id": "expected-output",
+      "status": "passed",
+      "passed": true,
+      "type": "output.equals"
+    }
+  ],
+  "actualOutput": "safe",
+  "exitCode": 0,
+  "durationMs": 4,
+  "startedAt": 1710000000000,
+  "finishedAt": 1710000000004,
+  "summary": {
+    "status": "passed",
+    "totalCases": 1,
+    "passedCases": 1,
+    "failedCases": 0
+  },
+  "provenance": {
+    "schemeId": "portable-smoke",
+    "schemeVersion": 1
+  },
+  "evidence": {
+    "files": [],
+    "toolCalls": [],
+    "networkRequests": [],
+    "timedOut": false,
+    "messages": []
+  }
+}
+```
+
+`status` is `passed` when every metric passes and `failed` otherwise. Failed
+checks are listed in `checks`, with safe human-readable explanations in
+`reasons`. Evidence is intended for diagnostics and reporting; hosts should
+still redact credentials before exposing reports outside a trusted boundary.
+
+For a suite, the top-level report contains `suite`, `cases`, and a summary with
+`totalCases`, `passedCases`, and `failedCases`. Each entry in `cases` is a
+single-case report with the shape above.
+
+## Extension API
+
+The runner is extensible without changing its execution loop:
+
+```js
+const stepRegistry = createStepRegistry().register(
+  'custom.prepare',
+  async (step, context) => {
+    context.environment.PREPARED = String(step.value)
+  },
+)
+
+const metricRegistry = createMetricRegistry().register(
+  'output.startsWith',
+  ({ metric, output }) => output.startsWith(metric.expected),
+)
+
+const reporters = createReporterRegistry().register(
+  'text',
+  report => `${report.status}: ${report.summary?.passedCases ?? 0} passed`,
+)
+```
+
+Pass `stepRegistry` and `metricRegistry` to `runPortableCasePlan` or `runSuite`.
+Use a reporter registry separately to render a completed report, or pass
+reporter functions in the `reporters` object accepted by `runSuite`. A custom
+step receives the step object and the runner execution context. A custom metric
+receives `{ metric, output, files, execution, evidence }` and returns a
+boolean. A custom reporter receives the completed report and may return a
+string or a promise for a string.
 
 ### Supported Portable Plan operations
 
@@ -86,13 +227,21 @@ Run operation:
 
 - `plugin.prompt` with a non-empty input string.
 
-Assertions:
+Metrics:
 
 - `output.equals`;
-- `output.contains`; and
-- `output.notContains`.
+- `output.contains`;
+- `output.notContains`;
+- `no-timeout`;
+- `file-exists`;
+- `no-secret`; and
+- `tool-calls`.
 
-Plans must contain at least one assertion. Unsupported operations and malformed actions fail before the plugin callback is invoked.
+The legacy `run` plus `assertions` shape remains supported and is normalized to
+the multi-step/multi-metric shape at execution time.
+
+Plans must contain at least one metric. Unsupported operations and malformed
+actions fail before the plugin callback is invoked.
 
 ## Security boundaries
 
@@ -112,7 +261,9 @@ The runner does not promise that a plugin callback is safe. Do not pass untruste
 
 This is an independent Git/npm repository. The companion DSH integration remains in [`dsh-agent-observe`](../dsh-agent-observe), which can provide the callback and DSH-specific lifecycle without being imported by this package.
 
-The repository intentionally contains no GitHub remote, publish configuration, CLI, or web server. The public package boundary is the package root and the explicit `./package.json` metadata export.
+The repository contains no CLI or web server. The public package boundary is
+the package root and the explicit `./package.json` metadata export. The npm
+package includes only `src/`, `README.md`, and `LICENSE`.
 
 ## Testing and verification
 
@@ -128,7 +279,11 @@ Run the local package verification script:
 npm run verify
 ```
 
-The verification script runs the test suite and `npm pack --dry-run --json`. A direct package smoke check should import the package root and exercise both a passing `output.contains` plan and a rejected traversal plan.
+The verification script runs the test suite and `npm pack --dry-run --json`.
+The dry-run package should contain only the public source, type declarations,
+README, license, and package metadata. A direct package smoke check should
+import the package root and exercise both a passing `output.contains` plan and
+a rejected traversal plan.
 
 ## License
 
