@@ -13,7 +13,7 @@
 Node.js 20 以上が必要です。
 
 ```bash
-npm install @dsh-plugin-evaluation/portable-runner@0.1.10
+npm install @dsh-plugin-evaluation/portable-runner@0.1.11
 ```
 
 ## 最小例

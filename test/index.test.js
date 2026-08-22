@@ -301,6 +301,7 @@ test('returns a failed timeout check when plugin execution times out', async () 
 
 test('enforces the configured plugin timeout and reports a timed out execution', async () => {
   const started = Date.now()
+  let aborted = false
   const result = await runPortableCasePlan({
     plan: {
       schemaVersion: 1,
@@ -309,11 +310,14 @@ test('enforces the configured plugin timeout and reports a timed out execution',
       metrics: [{ id: 'deadline', type: 'no-timeout' }],
     },
     limits: { timeoutMs: 10 },
-    async runPlugin() { return new Promise(() => {}) },
+    async runPlugin({ signal }) {
+      return new Promise(() => { signal.addEventListener('abort', () => { aborted = true }, { once: true }) })
+    },
   })
   assert.equal(result.status, 'failed')
   assert.equal(result.checks[0].passed, false)
   assert.equal(result.evidence.timedOut, true)
+  assert.equal(aborted, true)
   assert.ok(Date.now() - started < 1000)
 })
 

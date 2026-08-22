@@ -15,6 +15,11 @@ export { createMockNetwork, createMockTools, createTemporaryDatabase } from './a
 
 export { createReporterRegistry } from './reporters.js'
 export { runPortableCasePlan } from './execution.js'
+export type { AnyRecord, RunOptions } from './execution.js'
+export type { Call, Handler, NetworkHandler } from './adapters.js'
+export type { Evaluator, MetricContext } from './metrics.js'
+export type { Reporter } from './reporters.js'
+export type { StepHandler } from './steps.js'
 export type { PortableStatus, PortableStep, PortableMetric, PortableCasePlan, PortablePluginExecution, PortableCheck, PortableCaseReport } from './contracts.js'
 
 /** Define reusable test data and environment setup. */

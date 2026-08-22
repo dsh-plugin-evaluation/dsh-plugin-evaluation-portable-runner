@@ -13,7 +13,7 @@ Runner 负责创建临时工作区、执行准备步骤、调用宿主提供的�
 需要 Node.js 20 或更高版本：
 
 ```bash
-npm install @dsh-plugin-evaluation/portable-runner@0.1.10
+npm install @dsh-plugin-evaluation/portable-runner@0.1.11
 ```
 
 ## 最小示例

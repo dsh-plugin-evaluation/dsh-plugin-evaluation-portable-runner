@@ -1,7 +1,7 @@
 import type { PortableCheck, PortableMetric } from './contracts.js'
 
-type MetricContext = Record<string, unknown>
-type Evaluator = (context: MetricContext) => boolean | Promise<boolean>
+export type MetricContext = Record<string, unknown>
+export type Evaluator = (context: MetricContext) => boolean | Promise<boolean>
 const record = (value: unknown): Record<string, unknown> => value !== null && typeof value === 'object' ? value as Record<string, unknown> : {}
 
 function check(id: string, passed: boolean, reason: string | undefined, details: Record<string, unknown> = {}): PortableCheck {

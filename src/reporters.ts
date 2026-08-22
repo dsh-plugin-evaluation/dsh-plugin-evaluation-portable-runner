@@ -1,4 +1,4 @@
-type Reporter = (report: Record<string, unknown>) => unknown | Promise<unknown>
+export type Reporter = (report: Record<string, unknown>) => unknown | Promise<unknown>
 const field = (report: Record<string, unknown>, key: string): unknown => report[key]
 const escapeXml = (value: unknown): string => String(value).replace(/&/gu, '&amp;').replace(/"/gu, '&quot;').replace(/</gu, '&lt;').replace(/>/gu, '&gt;').replace(/'/gu, '&apos;')
 

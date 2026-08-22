@@ -31,7 +31,7 @@ The package is intentionally independent of DSH. A DSH integration or another ho
 ## Install
 
 ```bash
-npm install @dsh-plugin-evaluation/portable-runner@0.1.10
+npm install @dsh-plugin-evaluation/portable-runner@0.1.11
 ```
 
 Node.js 20 or newer is required.
@@ -114,11 +114,14 @@ console.log(result.status)
 at least one step and one metric. Other input formats must be adapted by the
 caller before invoking the runner.
 
-The callback receives `{ input, cwd, env }`:
+The callback receives `{ input, cwd, env, session, signal }`:
 
 - `input` is the `plugin.prompt` input;
 - `cwd` is the plan's private temporary workspace; and
 - `env` is a copied environment containing `baseEnvironment` plus plan setup values.
+- `session` contains the current multi-step conversation history; and
+- `signal` is aborted when the configured timeout expires, allowing hosts to
+  cancel underlying work promptly.
 
 The result contains `status`, structured `checks`, non-sensitive `reasons`, `actualOutput`, `exitCode`, and `durationMs`.
 

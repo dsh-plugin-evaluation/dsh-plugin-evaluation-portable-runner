@@ -39,3 +39,15 @@ test('CLI displays help without requiring a plan', async () => {
   const result = await exec(process.execPath, [cli, '--help'], { encoding: 'utf8' })
   assert.match(result.stdout, /Usage: portable-runner/)
 })
+
+test('CLI terminates a command that ignores SIGTERM after timeout', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'portable-runner-cli-timeout-'))
+  const planPath = join(root, 'plan.json')
+  const adapter = "process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"
+  await writeFile(planPath, JSON.stringify({ schemaVersion: 1, id: 'cli-timeout', steps: [{ op: 'plugin.prompt', input: 'hello' }], metrics: [{ id: 'deadline', type: 'no-timeout' }] }))
+  try {
+    await assert.rejects(exec(process.execPath, [cli, '--plan', planPath, '--command', process.execPath, '--timeout-ms', '50', '--', '-e', adapter], { encoding: 'utf8', timeout: 2000 }), error => error.code === 1)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

@@ -12,8 +12,8 @@ import { createStepRegistry, registerBuiltinSteps } from './steps.js'
 import { createMockNetwork, createMockTools, createTemporaryDatabase } from './adapters.js'
 import type { PortableCheck } from './contracts.js'
 
-type AnyRecord = Record<string, any>
-type RunOptions = {
+export type AnyRecord = Record<string, any>
+export type RunOptions = {
   plan?: AnyRecord
   runPlugin?: (request: AnyRecord) => Promise<AnyRecord> | AnyRecord
   baseEnvironment?: Record<string, string>

@@ -8,6 +8,7 @@ export interface CommandExecutionRequest {
   readonly cwd: string
   readonly env: Record<string, string>
   readonly session: Record<string, unknown>
+  readonly signal?: AbortSignal
 }
 
 export interface CommandExecutionResult {
@@ -38,11 +39,11 @@ function readResult(value: string): CommandExecutionResult | undefined {
   }
 }
 
-function runProcess(command: string, args: readonly string[], options: { cwd: string; env: Record<string, string>; timeoutMs?: number }): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean }> {
+function runProcess(command: string, args: readonly string[], options: { cwd: string; env: Record<string, string>; timeoutMs?: number; signal?: AbortSignal }): Promise<{ stdout: string; stderr: string; exitCode: number; timedOut: boolean }> {
   return new Promise((resolve, reject) => {
-    let child: any
+    let child: ReturnType<typeof spawn>
     try {
-      child = spawn(command, [...args], { cwd: options.cwd, env: options.env, shell: false, stdio: ['ignore', 'pipe', 'pipe'] })
+      child = spawn(command, [...args], { cwd: options.cwd, env: options.env, shell: false, detached: process.platform !== 'win32', stdio: ['ignore', 'pipe', 'pipe'] })
     } catch (error) {
       reject(error)
       return
@@ -50,19 +51,38 @@ function runProcess(command: string, args: readonly string[], options: { cwd: st
     let stdout = ''
     let stderr = ''
     let timedOut = false
+    let settled = false
     let timer: ReturnType<typeof setTimeout> | undefined
+    let forceTimer: ReturnType<typeof setTimeout> | undefined
+    const clearTimers = () => {
+      if (timer) clearTimeout(timer)
+      if (forceTimer) clearTimeout(forceTimer)
+    }
+    const kill = (signal: NodeJS.Signals) => {
+      if (child.pid === undefined) return
+      if (process.platform === 'win32') child.kill(signal)
+      else {
+        try { process.kill(-child.pid, signal) } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ESRCH') child.kill(signal)
+        }
+      }
+    }
+    const abortHandler = () => { if (!settled) kill('SIGTERM') }
+    options.signal?.addEventListener('abort', abortHandler, { once: true })
     child.stdout?.on('data', (chunk: unknown) => { stdout += String(chunk) })
     child.stderr?.on('data', (chunk: unknown) => { stderr += String(chunk) })
-    child.once('error', (error: unknown) => { if (timer) clearTimeout(timer); reject(error) })
+    child.once('error', (error: Error) => { settled = true; clearTimers(); options.signal?.removeEventListener('abort', abortHandler); reject(error) })
     child.once('close', (code: number | null) => {
-      if (timer) clearTimeout(timer)
+      settled = true
+      clearTimers()
+      options.signal?.removeEventListener('abort', abortHandler)
       resolve({ stdout, stderr, exitCode: code ?? (timedOut ? 124 : 1), timedOut })
     })
     if (options.timeoutMs !== undefined) {
       timer = setTimeout(() => {
         timedOut = true
-        child.kill('SIGTERM')
-        setTimeout(() => { if (!child.killed) child.kill('SIGKILL') }, 250)
+        kill('SIGTERM')
+        forceTimer = setTimeout(() => { if (!settled) kill('SIGKILL') }, 250)
       }, options.timeoutMs)
     }
   })
@@ -82,6 +102,7 @@ export function createCommandRunner(options: CommandAdapterOptions) {
       cwd: request.cwd,
       env: { ...Object.fromEntries(Object.entries(options.baseEnvironment ?? {}).filter((entry): entry is [string, string] => entry[1] !== undefined)), ...request.env, PORTABLE_RUNNER_INPUT_DIR: inputDir, PORTABLE_RUNNER_OUTPUT_DIR: outputDir, PORTABLE_RUNNER_WORKSPACE: request.cwd },
       ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
     let fileResult: CommandExecutionResult | undefined
     try { fileResult = readResult(await readFile(join(outputDir, 'experiment-result.json'), 'utf8')) } catch { fileResult = undefined }

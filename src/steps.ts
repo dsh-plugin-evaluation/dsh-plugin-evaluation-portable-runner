@@ -1,6 +1,6 @@
 import { PortableRunnerError } from './errors.js'
 
-type StepHandler = (step: Record<string, any>, context: Record<string, any>) => unknown | Promise<unknown>
+export type StepHandler = (step: Record<string, any>, context: Record<string, any>) => unknown | Promise<unknown>
 
 export function createStepRegistry(custom: Record<string, StepHandler> = {}) {
   const registry = new Map(Object.entries(custom))
@@ -28,13 +28,15 @@ export function registerBuiltinSteps(stepRegistry: ReturnType<typeof createStepR
   if (!stepRegistry.has('workspace.write')) stepRegistry.register('workspace.write', (step, value) => value.workspace.write(step.path, step.content))
   if (!stepRegistry.has('workspace.read')) stepRegistry.register('workspace.read', (step, value) => value.workspace.read(step.path))
   if (!stepRegistry.has('plugin.prompt')) stepRegistry.register('plugin.prompt', async (step, value) => {
-    const request = value.runPlugin({ input: step.input, cwd: value.root, env: value.environment, session: value.session })
+    const controller = new AbortController()
+    const request = value.runPlugin({ input: step.input, cwd: value.root, env: value.environment, session: value.session, signal: controller.signal })
     const timeoutMs = value.limits?.timeoutMs
+    let timer: ReturnType<typeof setTimeout> | undefined
     const execution = typeof timeoutMs === 'number' && timeoutMs > 0
       ? await Promise.race([
         request,
-        new Promise<Record<string, unknown>>(resolve => setTimeout(() => resolve({ output: '', exitCode: 124, timedOut: true }), timeoutMs)),
-      ])
+        new Promise<Record<string, unknown>>(resolve => { timer = setTimeout(() => { controller.abort(); resolve({ output: '', exitCode: 124, timedOut: true }) }, timeoutMs) }),
+      ]).finally(() => { if (timer) clearTimeout(timer) })
       : await request
     if (!execution || typeof execution !== 'object' || Array.isArray(execution)) throw new PortableRunnerError('plugin callback must return an execution object', 'invalid-plugin-result')
     value.executions.push(execution)

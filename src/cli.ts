@@ -76,7 +76,7 @@ async function readPlan(path: string): Promise<unknown> {
 async function main(): Promise<number> {
   const parsed = parseArgs(process.argv.slice(2))
   if (parsed === 'help') { process.stdout.write(HELP); return 0 }
-  if (parsed === 'version') { process.stdout.write('0.1.8\n'); return 0 }
+  if (parsed === 'version') { process.stdout.write('0.1.11\n'); return 0 }
   const plan = await readPlan(parsed.plan)
   const runPluginAdapter = createCommandRunner({ command: parsed.command, args: parsed.args, ...(parsed.timeoutMs === undefined ? {} : { timeoutMs: parsed.timeoutMs }), baseEnvironment: process.env })
   const runPlugin = (request: Record<string, unknown>) => runPluginAdapter(request as { input: string; cwd: string; env: Record<string, string>; session: Record<string, unknown> }) as Promise<Record<string, unknown>>

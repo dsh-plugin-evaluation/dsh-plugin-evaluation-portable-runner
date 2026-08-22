@@ -1,6 +1,6 @@
 {
   "name": "@dsh-plugin-evaluation/portable-runner",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Host-independent runner for DSH Portable Case Plans",
   "repository": {
     "type": "git",
@@ -41,6 +41,7 @@
     "verify": "npm run check:lines && npm run build && npm test && npm run docs:check && npm pack --dry-run --json"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.12.0"
   }

@@ -153,7 +153,7 @@ export function createReporterRegistry(custom?: Readonly<Record<string, (report:
 
 export function runPortableCasePlan(options: {
   readonly plan: PortableCasePlan
-  readonly runPlugin: (context: { readonly input: string; readonly cwd: string; readonly env: Readonly<Record<string, string>>; readonly session: Readonly<Record<string, unknown>> }) => Promise<PortablePluginExecution>
+  readonly runPlugin: (context: { readonly input: string; readonly cwd: string; readonly env: Readonly<Record<string, string>>; readonly session: Readonly<Record<string, unknown>>; readonly signal: AbortSignal }) => Promise<PortablePluginExecution>
   readonly baseEnvironment?: Readonly<Record<string, string>>
   readonly provenance?: Readonly<Record<string, unknown>>
   readonly secrets?: readonly string[]

@@ -1,6 +1,6 @@
-type Handler = (argumentsValue: Record<string, unknown>) => unknown | Promise<unknown>
-type NetworkHandler = (request: { url: string; options: Record<string, unknown> }) => unknown | Promise<unknown>
-type Call = { name: string; arguments: Record<string, unknown>; result: unknown }
+export type Handler = (argumentsValue: Record<string, unknown>) => unknown | Promise<unknown>
+export type NetworkHandler = (request: { url: string; options: Record<string, unknown> }) => unknown | Promise<unknown>
+export type Call = { name: string; arguments: Record<string, unknown>; result: unknown }
 
 export function createMockTools(definitions: Record<string, Handler> = {}) {
   const calls: Call[] = []
