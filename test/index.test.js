@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { access, readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { runPortableCasePlan } from '../src/index.js'
+import { createMetricRegistry, createMockNetwork, createMockTools, createReporterRegistry, createStepRegistry, createTemporaryDatabase, defineCase, defineFixture, defineSuite, runPortableCasePlan, runSuite } from '../src/index.js'
 
 function plan(assertions) {
   return {
@@ -97,4 +97,146 @@ test('rejects unsupported operations and workspace traversal before plugin execu
     }),
     /must be relative/,
   )
+})
+
+test('runs multiple prompt steps and evaluates reusable metrics', async () => {
+  const seen = []
+  const result = await runPortableCasePlan({
+    plan: {
+      schemaVersion: 1,
+      id: 'multi-step',
+      title: 'Multi-step case',
+      setup: [],
+      steps: [
+        { op: 'plugin.prompt', input: 'first' },
+        { op: 'plugin.prompt', input: 'second' },
+      ],
+      metrics: [
+        { id: 'answer', type: 'output.contains', expected: 'second answer' },
+        { id: 'deadline', type: 'no-timeout' },
+      ],
+    },
+    async runPlugin({ input }) {
+      seen.push(input)
+      return { output: input === 'second' ? 'second answer' : 'first answer', timedOut: false }
+    },
+  })
+
+  assert.equal(result.status, 'passed')
+  assert.deepEqual(seen, ['first', 'second'])
+  assert.deepEqual(result.checks.map(check => check.id), ['answer', 'deadline'])
+})
+
+test('runs a suite with fixture lifecycle and reporter output', async () => {
+  const lifecycle = []
+  const suite = defineSuite({
+    id: 'quality-suite',
+    version: '1.0.0',
+    fixtures: [defineFixture({
+      id: 'seed',
+      async setup(context) {
+        lifecycle.push('setup')
+        context.environment.set('FIXTURE_VALUE', 'ready')
+      },
+      async teardown() { lifecycle.push('teardown') },
+    })],
+    cases: [defineCase({
+      id: 'quality-case',
+      fixtures: ['seed'],
+      steps: [{ op: 'plugin.prompt', input: 'check fixture' }],
+      metrics: [{ id: 'answer', type: 'output.contains', expected: 'ready' }],
+    })],
+  })
+
+  const reports = []
+  const result = await runSuite({
+    suite,
+    reporters: { json: report => reports.push(report) },
+    async runPlugin({ env }) { return { output: env.FIXTURE_VALUE } },
+  })
+
+  assert.equal(result.status, 'passed')
+  assert.deepEqual(lifecycle, ['setup', 'teardown'])
+  assert.equal(reports.length, 1)
+  assert.equal(reports[0].summary.totalCases, 1)
+})
+
+test('rejects malformed plans before creating a workspace', async () => {
+  await assert.rejects(
+    runPortableCasePlan({
+      plan: { schemaVersion: 1, id: 'bad', steps: [{ op: 'plugin.prompt', input: '' }], metrics: [] },
+      async runPlugin() { throw new Error('must not run') },
+    }),
+    /input must be non-empty|metrics must contain at least one item/,
+  )
+})
+
+test('exposes session history, tool calls, and network requests as evidence', async () => {
+  const tools = createMockTools({ lookup: async args => ({ status: args.id === '123' ? 'shipping' : 'missing' }) })
+  const network = createMockNetwork({ 'https://orders.test/123': { status: 200, body: { status: 'shipping' } } })
+  const result = await runPortableCasePlan({
+    plan: {
+      schemaVersion: 1, id: 'evidence', setup: [],
+      steps: [
+        { op: 'tool.call', name: 'lookup', arguments: { id: '123' } },
+        { op: 'network.request', url: 'https://orders.test/123' },
+        { op: 'plugin.prompt', input: 'follow up' },
+      ],
+      metrics: [
+        { id: 'tool', type: 'tool-calls', expected: ['lookup'] },
+        { id: 'answer', type: 'output.contains', expected: 'shipping' },
+      ],
+    },
+    stepRegistry: createStepRegistry({
+      'tool.call': async (step, context) => { await context.tools.call(step.name, step.arguments) },
+      'network.request': async (step, context) => { await context.network.request(step.url) },
+    }),
+    metricRegistry: createMetricRegistry({
+      'tool-calls': ({ metric, evidence }) => metric.expected.every(name => evidence.toolCalls.some(call => call.name === name)),
+    }),
+    tools,
+    network,
+    async runPlugin({ session }) { return { output: `${session.messages.length} shipping` } },
+  })
+
+  assert.equal(result.status, 'passed')
+  assert.equal(result.evidence.toolCalls[0].name, 'lookup')
+  assert.equal(result.evidence.networkRequests[0].url, 'https://orders.test/123')
+  assert.equal(result.evidence.messages.length, 2)
+})
+
+test('supports temporary database and standard reporter formats', async () => {
+  const database = createTemporaryDatabase()
+  await database.set('order:123', { status: 'shipping' })
+  assert.deepEqual(await database.get('order:123'), { status: 'shipping' })
+
+  const reporters = createReporterRegistry()
+  assert.match(await reporters.render('json', { status: 'passed' }), /"status":"passed"/)
+  assert.match(await reporters.render('markdown', { status: 'passed', summary: { totalCases: 1, passedCases: 1, failedCases: 0 } }), /passed/i)
+  assert.match(await reporters.render('junit', { status: 'passed', summary: { totalCases: 1, passedCases: 1, failedCases: 0 } }), /tests="1"/)
+})
+
+test('returns a failed timeout check when plugin execution times out', async () => {
+  const result = await runPortableCasePlan({
+    plan: { schemaVersion: 1, id: 'timeout', setup: [], steps: [{ op: 'plugin.prompt', input: 'wait' }], metrics: [{ id: 'deadline', type: 'no-timeout' }] },
+    async runPlugin() { return { output: '', timedOut: true } },
+  })
+
+  assert.equal(result.status, 'failed')
+  assert.equal(result.checks[0].id, 'deadline')
+})
+
+test('tears down fixtures when a step fails', async () => {
+  const lifecycle = []
+  await assert.rejects(runPortableCasePlan({
+    plan: { schemaVersion: 1, id: 'failure-cleanup', setup: [], steps: [{ op: 'plugin.prompt', input: 'fail' }], metrics: [{ id: 'answer', type: 'output.contains', expected: 'ok' }] },
+    fixtures: [defineFixture({
+      id: 'cleanup',
+      setup() { lifecycle.push('setup') },
+      teardown() { lifecycle.push('teardown') },
+    })],
+    async runPlugin() { throw new Error('plugin failed') },
+  }), /plugin failed/)
+
+  assert.deepEqual(lifecycle, ['setup', 'teardown'])
 })
