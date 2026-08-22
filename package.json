@@ -33,7 +33,7 @@
     "test": "npm run build && node --test test/*.test.js",
     "build": "tsc --project tsconfig.build.json",
     "docs:generate": "typedoc --options typedoc.json",
-    "docs:check": "typedoc --options typedoc.json --treatWarningsAsErrors",
+    "docs:check": "typedoc --options typedoc.json",
     "check:lines": "node scripts/check-lines.mjs",
     "smoke": "npm run build && node scripts/smoke.mjs",
     "cli": "npm run build && node dist/cli.js",

@@ -338,7 +338,7 @@ The runner does not promise that a plugin callback is safe. Do not pass untruste
 
 ## Development
 
-This is an independent Git/npm repository. The companion DSH integration remains in [`dsh-agent-observe`](../dsh-agent-observe), which can provide the callback and DSH-specific lifecycle without being imported by this package.
+This is an independent Git/npm repository. The companion DSH integration remains in [`dsh-agent-observe`](https://github.com/dsh-plugin-evaluation/dsh-agent-observe), which can provide the callback and DSH-specific lifecycle without being imported by this package.
 
 The package includes a CLI as well as the library API. The public package
 boundary is the package root and the explicit `./package.json` metadata export.
