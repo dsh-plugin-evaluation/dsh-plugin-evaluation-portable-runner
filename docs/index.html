@@ -32,16 +32,18 @@
           <kbd>/</kbd>
         </div>
         <p class="nav-label">READ</p>
-        <a class="nav-link active" href="#quick-start">Quick start</a>
+        <a class="nav-link active" href="#api-index">API index</a>
+        <a class="nav-link" href="#core-api">Core API</a>
+        <a class="nav-link" href="#quick-start">Quick start</a>
         <a class="nav-link" href="#plans">Plans</a>
         <a class="nav-link" href="#reports">Reports</a>
         <a class="nav-link" href="#extensions">Extensions</a>
         <a class="nav-link" href="#safety">Safety</a>
         <p class="nav-label">API</p>
-        <a class="nav-link" href="#quick-start">runPortableCasePlan</a>
-        <a class="nav-link" href="#plans">runSuite</a>
-        <a class="nav-link" href="#extensions">Registries</a>
-        <a class="nav-link" href="#safety">Test adapters</a>
+        <a class="nav-link" href="#run-portable-case-plan">runPortableCasePlan</a>
+        <a class="nav-link" href="#run-suite">runSuite</a>
+        <a class="nav-link" href="#define-case">defineCase</a>
+        <a class="nav-link" href="#registries">Registries</a>
         <a class="nav-link" href="#release">Release</a>
       </nav>
 
@@ -57,7 +59,7 @@
         </section>
 
         <div class="mobile-nav" aria-label="Mobile documentation navigation">
-          <a href="#quick-start">Quick start</a><a href="#plans">Plans</a><a href="#reports">Reports</a><a href="#extensions">Extensions</a><a href="#safety">Safety</a><a href="#release">Release</a>
+          <a href="#api-index">API index</a><a href="#core-api">Core API</a><a href="#quick-start">Quick start</a><a href="#plans">Plans</a><a href="#reports">Reports</a><a href="#extensions">Extensions</a><a href="#safety">Safety</a><a href="#release">Release</a>
         </div>
 
         <section class="doc-section searchable" id="quick-start" data-search="quick start install npm runPortableCasePlan">
@@ -86,8 +88,53 @@ const report = await runPortableCasePlan({
 console.log(report.status) // passed</code></pre></div>
         </section>
 
+        <section class="doc-section searchable api-index" id="api-index" data-search="api index core api plans suites reports registries adapters runPortableCasePlan runSuite defineCase defineSuite PortableCasePlan PortableSuite PortableCaseResult createStepRegistry createMetricRegistry createReporterRegistry">
+          <div class="section-heading"><span class="section-number">02</span><div><p class="eyebrow">Find a core export</p><h2>Core API index</h2></div></div>
+          <p>This index covers the primary execution, plan, report, and registry APIs. Code identifiers and signatures match <code>src/index.d.ts</code>; utility exports remain listed in the type declaration.</p>
+          <div class="api-index-grid">
+            <div><span class="api-kind">CORE</span><a href="#run-portable-case-plan"><code>runPortableCasePlan</code></a><a href="#run-suite"><code>runSuite</code></a></div>
+            <div><span class="api-kind">PLANS &amp; SUITES</span><a href="#define-case"><code>defineCase</code></a><a href="#define-suite"><code>defineSuite</code></a><a href="#portable-case-plan"><code>PortableCasePlan</code></a><a href="#portable-suite"><code>PortableSuite</code></a></div>
+            <div><span class="api-kind">REPORTS</span><a href="#portable-case-result"><code>PortableCaseResult</code></a><a href="#reports"><code>PortablePluginExecution</code></a><a href="#reports"><code>PortableRunnerContext</code></a></div>
+            <div><span class="api-kind">EXTENSIONS</span><a href="#create-step-registry"><code>createStepRegistry</code></a><a href="#create-metric-registry"><code>createMetricRegistry</code></a><a href="#create-reporter-registry"><code>createReporterRegistry</code></a></div>
+          </div>
+        </section>
+
+        <section class="doc-section searchable api-reference" id="core-api" data-search="core api runPortableCasePlan runSuite defineCase defineSuite signature parameters returns source example">
+          <div class="section-heading"><span class="section-number">03</span><div><p class="eyebrow">Core API</p><h2>Execution and composition</h2></div></div>
+          <article class="api-entry" id="run-portable-case-plan">
+            <div class="api-entry-heading"><div><span class="api-kind">FUNCTION</span><h3>runPortableCasePlan()</h3></div><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L145">Defined in src/index.d.ts ↗</a></div>
+            <p>Run one Portable Case Plan and return a structured result. The host supplies the <code>runPlugin</code> callback.</p>
+            <div class="signature"><code>runPortableCasePlan(options): Promise&lt;PortableCaseResult&gt;</code></div>
+            <div class="api-detail-grid"><div><h4>Parameters</h4><dl><dt><code>plan</code></dt><dd>Portable plan to execute.</dd><dt><code>runPlugin</code></dt><dd>Callback receiving <code>input</code>, <code>cwd</code>, <code>env</code>, and <code>session</code>.</dd><dt><code>baseEnvironment</code></dt><dd>Optional initial environment values.</dd><dt><code>fixtures</code></dt><dd>Optional fixtures selected by the plan.</dd></dl></div><div><h4>Returns</h4><p><code>Promise&lt;PortableCaseResult&gt;</code> with status, checks, output, provenance, and evidence.</p><h4>Source</h4><p><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L145">Type declaration ↗</a></p></div></div>
+            <div class="code-block"><button class="copy-button" type="button" data-copy="run-portable-example">Copy</button><pre id="run-portable-example"><code>const result = await runPortableCasePlan({
+  plan,
+  async runPlugin({ input, env }) {
+    return { output: await host.run(input, env) }
+  },
+})</code></pre></div>
+          </article>
+          <article class="api-entry" id="run-suite">
+            <div class="api-entry-heading"><div><span class="api-kind">FUNCTION</span><h3>runSuite()</h3></div><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L158">Defined in src/index.d.ts ↗</a></div>
+            <p>Run every case in a suite, collect case results, and invoke the supplied reporters.</p>
+            <div class="signature"><code>runSuite(options): Promise&lt;Readonly&lt;Record&lt;string, unknown&gt;&gt;&gt;</code></div>
+            <div class="api-detail-grid"><div><h4>Parameters</h4><dl><dt><code>suite</code></dt><dd>Suite containing ordered cases and shared fixtures.</dd><dt><code>runPlugin</code></dt><dd>The same host callback used by individual cases.</dd><dt><code>reporters</code></dt><dd>Optional named callbacks invoked with the suite report.</dd></dl></div><div><h4>Returns</h4><p>A suite report containing <code>cases</code>, aggregate <code>status</code>, and pass/fail counts.</p></div></div>
+          </article>
+          <article class="api-entry" id="define-case">
+            <div class="api-entry-heading"><div><span class="api-kind">FUNCTION</span><h3>defineCase()</h3></div><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L104">Defined in src/index.d.ts ↗</a></div>
+            <p>Create a validated, executable case definition from an input object.</p>
+            <div class="signature"><code>defineCase(input): PortableCase</code></div>
+            <div class="api-detail-grid"><div><h4>Parameters</h4><dl><dt><code>id</code></dt><dd>Stable case identifier.</dd><dt><code>title</code></dt><dd>Human-readable case title.</dd><dt><code>setup</code>, <code>steps</code>, <code>metrics</code></dt><dd>Actions and checks for the case.</dd></dl></div><div><h4>Compatibility</h4><p>Legacy <code>run</code> and <code>assertions</code> are accepted. New definitions should use <code>steps</code> and <code>metrics</code>.</p></div></div>
+          </article>
+          <article class="api-entry" id="define-suite">
+            <div class="api-entry-heading"><div><span class="api-kind">FUNCTION</span><h3>defineSuite()</h3></div><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L115">Defined in src/index.d.ts ↗</a></div>
+            <p>Create a suite definition with shared fixtures and reusable cases.</p>
+            <div class="signature"><code>defineSuite(input): PortableSuite</code></div>
+            <div class="api-detail-grid"><div><h4>Parameters</h4><dl><dt><code>id</code></dt><dd>Stable suite identifier.</dd><dt><code>version</code></dt><dd>Caller-owned version recorded in reports.</dd><dt><code>fixtures</code>, <code>cases</code></dt><dd>Optional shared fixtures and case definitions.</dd></dl></div><div><h4>Returns</h4><p>A <code>PortableSuite</code> ready for <a href="#run-suite"><code>runSuite</code></a>.</p></div></div>
+          </article>
+        </section>
+
         <section class="doc-section searchable" id="plans" data-search="portable case plan schemaVersion steps metrics setup workspace plugin prompt">
-          <div class="section-heading"><span class="section-number">02</span><div><p class="eyebrow">The contract</p><h2>Portable plans</h2></div></div>
+          <div class="section-heading"><span class="section-number">04</span><div><p class="eyebrow">The contract</p><h2>Portable plans</h2></div></div>
           <p>A plan is deliberately small: bounded setup, explicit plugin steps, and reusable metrics. Use <code>steps</code> and <code>metrics</code> for all new plans.</p>
           <div class="api-grid">
             <article class="api-card"><span class="api-kind">PLAN</span><h3>PortableCasePlan</h3><p>Describes one deterministic evaluation case.</p><dl><dt><code>schemaVersion</code></dt><dd>Currently <code>1</code>.</dd><dt><code>setup</code></dt><dd><code>environment.set</code>, <code>workspace.write</code>, <code>workspace.read</code>.</dd><dt><code>steps</code></dt><dd>One or more <code>plugin.prompt</code> steps or registered operations.</dd><dt><code>metrics</code></dt><dd>At least one metric with a unique <code>id</code> and <code>type</code>.</dd></dl></article>
@@ -97,7 +144,7 @@ console.log(report.status) // passed</code></pre></div>
         </section>
 
         <section class="doc-section searchable" id="reports" data-search="report reportSchemaVersion checks actualOutput summary provenance evidence">
-          <div class="section-heading"><span class="section-number">03</span><div><p class="eyebrow">What comes back</p><h2>Runner-native reports</h2></div></div>
+          <div class="section-heading"><span class="section-number">05</span><div><p class="eyebrow">What comes back</p><h2>Runner-native reports</h2></div></div>
           <p>Every single-case execution returns the same report contract. Hosts can persist it, render it, or pass it across an integration boundary without adapting fields.</p>
           <div class="report-table"><div><span>reportSchemaVersion</span><b>1</b></div><div><span>status</span><b class="success-text">passed · failed</b></div><div><span>checks</span><b>Structured metric results</b></div><div><span>actualOutput</span><b>Final plugin output</b></div><div><span>summary</span><b>Cases passed / failed</b></div><div><span>provenance</span><b>Caller and plan identity</b></div><div><span>evidence</span><b>Files, calls, messages, timeout state</b></div></div>
           <div class="code-block"><button class="copy-button" type="button" data-copy="report-example">Copy</button><pre id="report-example"><code>{
@@ -116,7 +163,7 @@ console.log(report.status) // passed</code></pre></div>
         </section>
 
         <section class="doc-section searchable" id="extensions" data-search="extension custom step metric reporter registry createStepRegistry createMetricRegistry createReporterRegistry">
-          <div class="section-heading"><span class="section-number">04</span><div><p class="eyebrow">Make it yours</p><h2>Extension points</h2></div></div>
+          <div class="section-heading"><span class="section-number">06</span><div><p class="eyebrow">Make it yours</p><h2>Extension points</h2></div></div>
           <p>Extend the vocabulary without forking the execution loop. Registries are small, explicit, and easy to inspect.</p>
           <div class="code-block"><button class="copy-button" type="button" data-copy="extension-example">Copy</button><pre id="extension-example"><code>const steps = createStepRegistry().register(
   'custom.prepare',
@@ -132,16 +179,16 @@ const reporters = createReporterRegistry().register(
   'text',
   report => `${report.status}: ${report.summary?.passedCases ?? 0} passed`,
 )</code></pre></div>
-          <div class="api-grid three"><article class="api-card"><span class="api-kind">STEPS</span><h3>createStepRegistry</h3><p>Register bounded operations that receive a step and execution context.</p></article><article class="api-card"><span class="api-kind">METRICS</span><h3>createMetricRegistry</h3><p>Register boolean evaluators over output and collected evidence.</p></article><article class="api-card"><span class="api-kind">REPORTERS</span><h3>createReporterRegistry</h3><p>Render JSON, Markdown, JUnit, or a custom report format.</p></article></div>
+          <div class="api-grid three" id="registries"><article class="api-card"><span class="api-kind">STEPS</span><h3>createStepRegistry</h3><p>Register bounded operations that receive a step and execution context.</p><p class="source-line"><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L122">Source ↗</a></p></article><article class="api-card"><span class="api-kind">METRICS</span><h3>createMetricRegistry</h3><p>Register boolean evaluators over output and collected evidence.</p><p class="source-line"><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L129">Source ↗</a></p></article><article class="api-card"><span class="api-kind">REPORTERS</span><h3>createReporterRegistry</h3><p>Render JSON, Markdown, JUnit, or a custom report format.</p><p class="source-line"><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L139">Source ↗</a></p></article></div>
         </section>
 
         <section class="doc-section searchable" id="safety" data-search="security safety workspace credentials sandbox host callback">
-          <div class="section-heading"><span class="section-number">05</span><div><p class="eyebrow">Boundaries</p><h2>Safety by construction</h2></div></div>
+          <div class="section-heading"><span class="section-number">07</span><div><p class="eyebrow">Boundaries</p><h2>Safety by construction</h2></div></div>
           <ul class="safety-list"><li><strong>Fresh workspace</strong><span>Every invocation gets a temporary workspace removed in a <code>finally</code> block.</span></li><li><strong>Bounded paths</strong><span>Relative workspace paths reject NUL bytes, traversal, and escapes.</span></li><li><strong>Host-owned execution</strong><span>The callback is the trust boundary for process, network, filesystem, and credentials.</span></li><li><strong>No DSH dependency</strong><span>The package is host-independent and never starts a process or web server.</span></li></ul>
         </section>
 
         <section class="doc-section searchable" id="release" data-search="release publish npm github actions trusted publishing">
-          <div class="section-heading"><span class="section-number">06</span><div><p class="eyebrow">Ship with confidence</p><h2>Release & verification</h2></div></div>
+          <div class="section-heading"><span class="section-number">08</span><div><p class="eyebrow">Ship with confidence</p><h2>Release & verification</h2></div></div>
           <p>Run the local suite and package dry-run before publishing. Tagged releases are published by GitHub Actions after the version check.</p>
           <div class="code-block compact"><pre><code>npm test
 npm run verify
