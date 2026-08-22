@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="API reference for @dsh-plugin-evaluation/portable-runner.">
+    <meta name="theme-color" content="#0b1018">
+    <title>Portable Runner API</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Portable Runner API home">
+        <span class="brand-mark" aria-hidden="true">PR</span>
+        <span><strong>Portable Runner</strong><small>API reference</small></span>
+      </a>
+      <div class="header-meta">
+        <span class="version-badge">v0.1.6</span>
+        <a href="https://www.npmjs.com/package/@dsh-plugin-evaluation/portable-runner">npm</a>
+        <a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner">GitHub</a>
+      </div>
+    </header>
+
+    <div class="page-shell" id="top">
+      <nav class="sidebar" aria-label="Documentation navigation">
+        <div class="search-wrap">
+          <label for="doc-search">Search docs</label>
+          <input id="doc-search" type="search" placeholder="Search API…" autocomplete="off">
+          <kbd>/</kbd>
+        </div>
+        <p class="nav-label">READ</p>
+        <a class="nav-link active" href="#quick-start">Quick start</a>
+        <a class="nav-link" href="#plans">Plans</a>
+        <a class="nav-link" href="#reports">Reports</a>
+        <a class="nav-link" href="#extensions">Extensions</a>
+        <a class="nav-link" href="#safety">Safety</a>
+        <p class="nav-label">API</p>
+        <a class="nav-link" href="#quick-start">runPortableCasePlan</a>
+        <a class="nav-link" href="#plans">runSuite</a>
+        <a class="nav-link" href="#extensions">Registries</a>
+        <a class="nav-link" href="#safety">Test adapters</a>
+        <a class="nav-link" href="#release">Release</a>
+      </nav>
+
+      <main class="content">
+        <section class="hero searchable" data-search="portable runner api reference host independent evaluation plans">
+          <p class="eyebrow">@dsh-plugin-evaluation / portable-runner</p>
+          <h1>Run portable evaluations.<br><em>Keep the contract anywhere.</em></h1>
+          <p class="hero-copy">A host-independent execution engine for deterministic DSH Portable Case Plans. Bring your own plugin host, receive one structured report.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#quick-start">Start building <span aria-hidden="true">→</span></a>
+            <a class="button secondary" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/README.md">Read README</a>
+          </div>
+        </section>
+
+        <div class="mobile-nav" aria-label="Mobile documentation navigation">
+          <a href="#quick-start">Quick start</a><a href="#plans">Plans</a><a href="#reports">Reports</a><a href="#extensions">Extensions</a><a href="#safety">Safety</a>
+        </div>
+
+        <section class="doc-section searchable" id="quick-start" data-search="quick start install npm runPortableCasePlan">
+          <div class="section-heading"><span class="section-number">01</span><div><p class="eyebrow">First steps</p><h2>Quick start</h2></div></div>
+          <p>Install the runner in any Node.js 20+ host. The runner never starts a process or web server; your callback owns plugin execution.</p>
+          <div class="code-block"><button class="copy-button" type="button" data-copy="install-command">Copy</button><pre id="install-command"><code>npm install @dsh-plugin-evaluation/portable-runner@0.1.6</code></pre></div>
+          <div class="code-block"><button class="copy-button" type="button" data-copy="quick-example">Copy</button><pre id="quick-example"><code>import { runPortableCasePlan } from '@dsh-plugin-evaluation/portable-runner'
+
+const report = await runPortableCasePlan({
+  plan: {
+    schemaVersion: 1,
+    id: 'portable-smoke',
+    title: 'Portable runner smoke test',
+    setup: [
+      { op: 'environment.set', name: 'EXPECTED', value: 'safe' },
+      { op: 'workspace.write', path: 'input.txt', content: 'fixture' },
+    ],
+    steps: [{ op: 'plugin.prompt', input: 'answer' }],
+    metrics: [{ id: 'expected-output', type: 'output.equals', expected: 'safe' }],
+  },
+  async runPlugin({ env }) {
+    return { output: env.EXPECTED, exitCode: 0 }
+  },
+})
+
+console.log(report.status) // passed</code></pre></div>
+        </section>
+
+        <section class="doc-section searchable" id="plans" data-search="portable case plan schemaVersion steps metrics setup workspace plugin prompt">
+          <div class="section-heading"><span class="section-number">02</span><div><p class="eyebrow">The contract</p><h2>Portable plans</h2></div></div>
+          <p>A plan is deliberately small: bounded setup, explicit plugin steps, and reusable metrics. Use <code>steps</code> and <code>metrics</code> for all new plans.</p>
+          <div class="api-grid">
+            <article class="api-card"><span class="api-kind">PLAN</span><h3>PortableCasePlan</h3><p>Describes one deterministic evaluation case.</p><dl><dt><code>schemaVersion</code></dt><dd>Currently <code>1</code>.</dd><dt><code>setup</code></dt><dd><code>environment.set</code>, <code>workspace.write</code>, <code>workspace.read</code>.</dd><dt><code>steps</code></dt><dd>One or more <code>plugin.prompt</code> steps or registered operations.</dd><dt><code>metrics</code></dt><dd>At least one metric with a unique <code>id</code> and <code>type</code>.</dd></dl></article>
+            <article class="api-card"><span class="api-kind">SUITE</span><h3>PortableSuite</h3><p>Composes reusable cases and fixture lifecycles.</p><dl><dt><code>fixtures</code></dt><dd>Setup and teardown hooks shared by selected cases.</dd><dt><code>cases</code></dt><dd>Portable cases executed independently.</dd><dt><code>version</code></dt><dd>Caller-owned suite version recorded in provenance.</dd></dl></article>
+          </div>
+          <div class="callout"><strong>Compatibility note</strong><span>The legacy <code>run</code> plus <code>assertions</code> shape is normalized, but new plans should use <code>steps</code> plus <code>metrics</code>.</span></div>
+        </section>
+
+        <section class="doc-section searchable" id="reports" data-search="report reportSchemaVersion checks actualOutput summary provenance evidence">
+          <div class="section-heading"><span class="section-number">03</span><div><p class="eyebrow">What comes back</p><h2>Runner-native reports</h2></div></div>
+          <p>Every single-case execution returns the same report contract. Hosts can persist it, render it, or pass it across an integration boundary without adapting fields.</p>
+          <div class="report-table"><div><span>reportSchemaVersion</span><b>1</b></div><div><span>status</span><b class="success-text">passed · failed</b></div><div><span>checks</span><b>Structured metric results</b></div><div><span>actualOutput</span><b>Final plugin output</b></div><div><span>summary</span><b>Cases passed / failed</b></div><div><span>provenance</span><b>Caller and plan identity</b></div><div><span>evidence</span><b>Files, calls, messages, timeout state</b></div></div>
+          <div class="code-block"><button class="copy-button" type="button" data-copy="report-example">Copy</button><pre id="report-example"><code>{
+  reportSchemaVersion: 1,
+  reportId: 'uuid',
+  runId: 'uuid',
+  status: 'passed',
+  reasons: [],
+  checks: [{ id: 'expected-output', passed: true }],
+  actualOutput: 'safe',
+  exitCode: 0,
+  summary: { totalCases: 1, passedCases: 1, failedCases: 0 },
+  provenance: { schemeId: 'portable-smoke', schemeVersion: 1 },
+  evidence: { files: [], toolCalls: [], messages: [] }
+}</code></pre></div>
+        </section>
+
+        <section class="doc-section searchable" id="extensions" data-search="extension custom step metric reporter registry createStepRegistry createMetricRegistry createReporterRegistry">
+          <div class="section-heading"><span class="section-number">04</span><div><p class="eyebrow">Make it yours</p><h2>Extension points</h2></div></div>
+          <p>Extend the vocabulary without forking the execution loop. Registries are small, explicit, and easy to inspect.</p>
+          <div class="code-block"><button class="copy-button" type="button" data-copy="extension-example">Copy</button><pre id="extension-example"><code>const steps = createStepRegistry().register(
+  'custom.prepare',
+  (step, context) => { context.environment.PREPARED = String(step.value) },
+)
+
+const metrics = createMetricRegistry().register(
+  'output.startsWith',
+  ({ metric, output }) => output.startsWith(metric.expected),
+)
+
+const reporters = createReporterRegistry().register(
+  'text',
+  report => `${report.status}: ${report.summary?.passedCases ?? 0} passed`,
+)</code></pre></div>
+          <div class="api-grid three"><article class="api-card"><span class="api-kind">STEPS</span><h3>createStepRegistry</h3><p>Register bounded operations that receive a step and execution context.</p></article><article class="api-card"><span class="api-kind">METRICS</span><h3>createMetricRegistry</h3><p>Register boolean evaluators over output and collected evidence.</p></article><article class="api-card"><span class="api-kind">REPORTERS</span><h3>createReporterRegistry</h3><p>Render JSON, Markdown, JUnit, or a custom report format.</p></article></div>
+        </section>
+
+        <section class="doc-section searchable" id="safety" data-search="security safety workspace credentials sandbox host callback">
+          <div class="section-heading"><span class="section-number">05</span><div><p class="eyebrow">Boundaries</p><h2>Safety by construction</h2></div></div>
+          <ul class="safety-list"><li><strong>Fresh workspace</strong><span>Every invocation gets a temporary workspace removed in a <code>finally</code> block.</span></li><li><strong>Bounded paths</strong><span>Relative workspace paths reject NUL bytes, traversal, and escapes.</span></li><li><strong>Host-owned execution</strong><span>The callback is the trust boundary for process, network, filesystem, and credentials.</span></li><li><strong>No DSH dependency</strong><span>The package is host-independent and never starts a process or web server.</span></li></ul>
+        </section>
+
+        <section class="doc-section searchable" id="release" data-search="release publish npm github actions trusted publishing">
+          <div class="section-heading"><span class="section-number">06</span><div><p class="eyebrow">Ship with confidence</p><h2>Release & verification</h2></div></div>
+          <p>Run the local suite and package dry-run before publishing. Tagged releases are published by GitHub Actions after the version check.</p>
+          <div class="code-block compact"><pre><code>npm test
+npm run verify
+npm version patch
+git push origin main --follow-tags</code></pre></div>
+          <p class="muted">Source: <a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts">public type declarations</a> · <a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/README.md">README</a></p>
+        </section>
+      </main>
+
+      <aside class="release-card">
+        <span class="status-dot"></span><span>Current release</span>
+        <strong>0.1.6</strong>
+        <p>Host-independent evaluation engine for DSH Portable Case Plans.</p>
+        <a href="https://www.npmjs.com/package/@dsh-plugin-evaluation/portable-runner">View on npm <span aria-hidden="true">↗</span></a>
+      </aside>
+    </div>
+    <footer class="site-footer"><span>MIT licensed · DSH Plugin Evaluation</span><a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner">Open repository ↗</a></footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>
