@@ -1,24 +1,28 @@
 {
   "name": "@dsh-plugin-evaluation/portable-runner",
-  "version": "0.1.6",
+  "version": "0.1.10",
   "description": "Host-independent runner for DSH Portable Case Plans",
   "repository": {
     "type": "git",
     "url": "https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner"
   },
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
+  "bin": {
+    "portable-runner": "./dist/cli.js"
+  },
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "import": "./src/index.js",
-      "default": "./src/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "src/",
+    "dist/",
     "README.md",
+    "CONTRACT.md",
     "LICENSE"
   ],
   "engines": {
@@ -26,8 +30,18 @@
   },
   "license": "MIT",
   "scripts": {
-    "test": "node --test test/*.test.js",
-    "smoke": "node scripts/smoke.mjs",
-    "verify": "npm test && npm pack --dry-run --json"
+    "test": "npm run build && node --test test/*.test.js",
+    "build": "tsc --project tsconfig.build.json",
+    "docs:generate": "typedoc --options typedoc.json",
+    "docs:check": "typedoc --options typedoc.json --treatWarningsAsErrors",
+    "check:lines": "node scripts/check-lines.mjs",
+    "smoke": "npm run build && node scripts/smoke.mjs",
+    "cli": "npm run build && node dist/cli.js",
+    "typecheck": "tsc --project tsconfig.json",
+    "verify": "npm run check:lines && npm run build && npm test && npm run docs:check && npm pack --dry-run --json"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.12.0"
   }
 }

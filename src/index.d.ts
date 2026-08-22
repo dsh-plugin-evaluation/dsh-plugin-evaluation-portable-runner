@@ -1,20 +1,22 @@
 export type PortableStep = Readonly<Record<string, unknown>> & { readonly op: string }
 
+export class PortableRunnerError extends Error {
+  readonly code: string
+}
+
 export type PortableMetric = Readonly<Record<string, unknown>> & {
   readonly id: string
   readonly type: string
 }
 
 export interface PortableCasePlan {
-  readonly schemaVersion?: number
-  readonly id?: string
+  readonly schemaVersion: 1
+  readonly id: string
   readonly title?: string
   readonly fixtures?: readonly string[]
   readonly setup?: readonly PortableStep[]
-  readonly steps?: readonly PortableStep[]
-  readonly metrics?: readonly PortableMetric[]
-  readonly run?: { readonly op: 'plugin.prompt'; readonly input: string }
-  readonly assertions?: readonly { readonly op: 'output.equals' | 'output.contains' | 'output.notContains'; readonly value: string }[]
+  readonly steps: readonly PortableStep[]
+  readonly metrics: readonly PortableMetric[]
 }
 
 export interface PortablePluginExecution {
@@ -62,6 +64,14 @@ export interface PortableTemporaryDatabase {
   readonly clear: () => Promise<void>
 }
 
+export interface PortableRunLimits {
+  readonly timeoutMs?: number
+  readonly maxSteps?: number
+  readonly maxMetrics?: number
+}
+
+export type PortableErrorMode = 'throw' | 'report'
+
 export interface PortableRunnerContext {
   readonly root: string
   readonly environment: { readonly set: (name: string, value: string) => void }
@@ -100,6 +110,7 @@ export function defineFixture(input: {
 }): PortableFixture
 
 export function validatePortableCasePlan(plan: PortableCasePlan): PortableCasePlan
+export function validatePortableSuite(suite: PortableSuite): PortableSuite
 
 export function defineCase(input: {
   readonly id: string
@@ -107,8 +118,6 @@ export function defineCase(input: {
   readonly fixtures?: readonly string[]
   readonly setup?: readonly PortableStep[]
   readonly steps?: readonly PortableStep[]
-  readonly run?: PortableStep
-  readonly assertions?: readonly { readonly op: 'output.equals' | 'output.contains' | 'output.notContains'; readonly value: string }[]
   readonly metrics?: readonly PortableMetric[]
 }): PortableCase
 
@@ -147,12 +156,15 @@ export function runPortableCasePlan(options: {
   readonly runPlugin: (context: { readonly input: string; readonly cwd: string; readonly env: Readonly<Record<string, string>>; readonly session: Readonly<Record<string, unknown>> }) => Promise<PortablePluginExecution>
   readonly baseEnvironment?: Readonly<Record<string, string>>
   readonly provenance?: Readonly<Record<string, unknown>>
+  readonly secrets?: readonly string[]
   readonly fixtures?: readonly PortableFixture[]
   readonly stepRegistry?: ReturnType<typeof createStepRegistry>
   readonly metricRegistry?: ReturnType<typeof createMetricRegistry>
   readonly tools?: PortableMockTools
   readonly network?: PortableMockNetwork
   readonly database?: PortableTemporaryDatabase
+  readonly limits?: PortableRunLimits
+  readonly errorMode?: PortableErrorMode
 }): Promise<PortableCaseResult>
 
 export function runSuite(options: {
@@ -160,6 +172,7 @@ export function runSuite(options: {
   readonly runPlugin: Parameters<typeof runPortableCasePlan>[0]['runPlugin']
   readonly reporters?: Readonly<Record<string, (report: Readonly<Record<string, unknown>>) => Promise<void> | void>>
   readonly baseEnvironment?: Readonly<Record<string, string>>
+  readonly secrets?: readonly string[]
   readonly stepRegistry?: ReturnType<typeof createStepRegistry>
   readonly metricRegistry?: ReturnType<typeof createMetricRegistry>
   readonly tools?: PortableMockTools

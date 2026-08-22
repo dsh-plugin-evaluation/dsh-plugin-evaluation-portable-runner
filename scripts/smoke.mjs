@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict'
-import { runPortableCasePlan } from '@dsh-plugin-evaluation/portable-runner'
+import { runPortableCasePlan } from '../dist/index.js'
 
 const passing = await runPortableCasePlan({
   plan: {
+    schemaVersion: 1,
+    id: 'smoke-pass',
+    title: 'Portable runner smoke',
     setup: [{ op: 'environment.set', name: 'SMOKE_VALUE', value: 'safe' }],
-    run: { op: 'plugin.prompt', input: 'smoke' },
-    assertions: [{ op: 'output.contains', value: 'safe' }],
+    steps: [{ op: 'plugin.prompt', input: 'smoke' }],
+    metrics: [{ id: 'expected-output', type: 'output.contains', expected: 'safe' }],
   },
   async runPlugin({ env }) {
     return { output: env.SMOKE_VALUE, exitCode: 0 }
@@ -16,9 +19,12 @@ assert.equal(passing.status, 'passed')
 await assert.rejects(
   runPortableCasePlan({
     plan: {
+      schemaVersion: 1,
+      id: 'smoke-traversal',
+      title: 'Portable runner traversal',
       setup: [{ op: 'workspace.write', path: '../escape', content: 'blocked' }],
-      run: { op: 'plugin.prompt', input: 'smoke' },
-      assertions: [{ op: 'output.contains', value: 'safe' }],
+      steps: [{ op: 'plugin.prompt', input: 'smoke' }],
+      metrics: [{ id: 'expected-output', type: 'output.contains', expected: 'safe' }],
     },
     async runPlugin() {
       throw new Error('traversal must be rejected before callback')

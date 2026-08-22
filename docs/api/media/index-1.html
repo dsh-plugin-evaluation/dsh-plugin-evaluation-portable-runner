@@ -1,0 +1,266 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Portable Runner API - v0.1.8</title><meta name="description" content="Documentation for Portable Runner API"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">Portable Runner API - v0.1.8</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<h1>Portable Runner API - v0.1.8</h1></div>
+<div class="tsd-panel tsd-typography"><h1 id="dsh-plugin-evaluationportable-runner" class="tsd-anchor-link">@dsh-plugin-evaluation/portable-runner<a href="#dsh-plugin-evaluationportable-runner" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p>Host-independent execution engine for DSH Portable Case Plans.</p>
+<h2 id="what-and-why" class="tsd-anchor-link">What and why<a href="#what-and-why" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Portable Case Plans describe a small, deterministic evaluation contract without binding the evaluation to DSH process startup, profiles, credentials, or a web server. This package owns the reusable part of that contract:</p>
+<ul>
+<li>creates one temporary workspace per plan;</li>
+<li>applies the bounded setup operations;</li>
+<li>invokes a host-provided plugin callback;</li>
+<li>evaluates registered metrics; and</li>
+<li>removes the temporary workspace after execution, including when setup or execution fails.</li>
+</ul>
+<p>The package is intentionally independent of DSH. A DSH integration or another host remains responsible for starting a plugin and deciding how credentials and process isolation are provided.</p>
+<h3 id="terminology" class="tsd-anchor-link">Terminology<a href="#terminology" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li><strong>Portable Case Plan</strong>: one evaluation scenario containing preparation, plugin steps, and checks.</li>
+<li><strong>Suite</strong>: a group of evaluation plans with shared fixtures and an aggregate report.</li>
+<li><strong>Fixture</strong>: test data or environment setup applied before a plan.</li>
+<li><strong>Step</strong>: one operation in a plan, such as a prompt or workspace action.</li>
+<li><strong>Metric</strong>: a check that decides whether the result meets expectations.</li>
+<li><strong>Evidence</strong>: collected execution records such as output, files, messages, and calls.</li>
+<li><strong>Provenance</strong>: metadata describing which plan and caller produced a report.</li>
+<li><strong>Registry</strong>: an extension point for custom steps, metrics, or report renderers.</li>
+<li><strong><code>runPlugin</code> callback</strong>: the host-owned function that actually invokes the plugin.</li>
+</ul>
+<h2 id="install" class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">@dsh-plugin-evaluation/portable-runner@0.1.8</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Node.js 20 or newer is required.</p>
+<h2 id="cli" class="tsd-anchor-link">CLI<a href="#cli" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The package also exposes <code>portable-runner</code>, a cross-language command-line
+entrypoint. It invokes an external command using the same one-shot file
+protocol used by the DSH experiment runner:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">build</span><br/><span class="hl-0">node</span><span class="hl-1"> </span><span class="hl-2">dist/cli.js</span><span class="hl-1"> </span><span class="hl-3">\</span><br/><span class="hl-1">  </span><span class="hl-4">--plan</span><span class="hl-1"> </span><span class="hl-2">./examples/order-status.plan.json</span><span class="hl-1"> </span><span class="hl-3">\</span><br/><span class="hl-1">  </span><span class="hl-4">--format</span><span class="hl-1"> </span><span class="hl-2">json</span><span class="hl-1"> </span><span class="hl-3">\</span><br/><span class="hl-1">  </span><span class="hl-4">--timeout-ms</span><span class="hl-1"> </span><span class="hl-5">30000</span><span class="hl-1"> </span><span class="hl-3">\</span><br/><span class="hl-1">  </span><span class="hl-4">--command</span><span class="hl-1"> </span><span class="hl-2">node</span><span class="hl-1"> </span><span class="hl-4">--</span><span class="hl-1"> </span><span class="hl-2">./plugin-adapter.mjs</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The command receives <code>PORTABLE_RUNNER_INPUT_DIR</code> and
+<code>PORTABLE_RUNNER_OUTPUT_DIR</code>. It reads <code>input/experiment.json</code> and may write
+<code>output/experiment-result.json</code> with <code>output</code>, <code>stdout</code>, <code>stderr</code>, <code>exitCode</code>,
+<code>timedOut</code>, <code>files</code>, and <code>toolCalls</code>. If no result file is written, stdout is
+used as the output fallback. The CLI never invokes a shell.</p>
+<p>Exit code <code>0</code> means the evaluation passed, <code>1</code> means checks failed, <code>2</code> means
+CLI or protocol failure, and <code>124</code> means the external command timed out.</p>
+<p>To remove the package from a project, run <code>npm uninstall @dsh-plugin-evaluation/portable-runner</code>. For a global CLI installation, use
+<code>npm uninstall -g @dsh-plugin-evaluation/portable-runner</code>. If you used
+<code>npm link</code> during development, remove the link with
+<code>npm unlink -g @dsh-plugin-evaluation/portable-runner</code>.</p>
+<h2 id="release" class="tsd-anchor-link">Release<a href="#release" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>普通 push 只运行 CI，不会发布 npm。发布新版本时，先更新
+<code>package.json</code> 的版本号，再创建并推送同名 tag：</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">version</span><span class="hl-1"> </span><span class="hl-2">patch</span><br/><span class="hl-0">git</span><span class="hl-1"> </span><span class="hl-2">push</span><span class="hl-1"> </span><span class="hl-2">origin</span><span class="hl-1"> </span><span class="hl-2">main</span><span class="hl-1"> </span><span class="hl-4">--follow-tags</span>
+</code><button type="button">Copy</button></pre>
+
+<p>推送 <code>vX.Y.Z</code> tag 后，GitHub Actions 会先运行 <code>npm run verify</code>，确认 tag
+与 <code>package.json</code> 版本一致后，再通过 npm Trusted Publishing 发布包。首次使用前，需要在 npm 包设置中将对应 GitHub 仓库和 <code>Publish</code> workflow 配置为 Trusted Publisher。</p>
+<h2 id="api" class="tsd-anchor-link">API<a href="#api" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The package exports <code>runPortableCasePlan</code> and small builders for reusable suites:</p>
+<pre><code class="js"><span class="hl-6">import</span><span class="hl-1"> { </span><span class="hl-7">runPortableCasePlan</span><span class="hl-1"> } </span><span class="hl-6">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@dsh-plugin-evaluation/portable-runner&#39;</span><br/><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-8">result</span><span class="hl-1"> = </span><span class="hl-6">await</span><span class="hl-1"> </span><span class="hl-0">runPortableCasePlan</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-7">plan:</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-7">schemaVersion:</span><span class="hl-1"> </span><span class="hl-5">1</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-7">id:</span><span class="hl-1"> </span><span class="hl-2">&#39;portable-smoke&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-7">title:</span><span class="hl-1"> </span><span class="hl-2">&#39;Portable runner smoke test&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-7">setup:</span><span class="hl-1"> [</span><br/><span class="hl-1">      { </span><span class="hl-7">op:</span><span class="hl-1"> </span><span class="hl-2">&#39;environment.set&#39;</span><span class="hl-1">, </span><span class="hl-7">name:</span><span class="hl-1"> </span><span class="hl-2">&#39;EXPECTED&#39;</span><span class="hl-1">, </span><span class="hl-7">value:</span><span class="hl-1"> </span><span class="hl-2">&#39;safe&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">      { </span><span class="hl-7">op:</span><span class="hl-1"> </span><span class="hl-2">&#39;workspace.write&#39;</span><span class="hl-1">, </span><span class="hl-7">path:</span><span class="hl-1"> </span><span class="hl-2">&#39;input.txt&#39;</span><span class="hl-1">, </span><span class="hl-7">content:</span><span class="hl-1"> </span><span class="hl-2">&#39;fixture&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">      { </span><span class="hl-7">op:</span><span class="hl-1"> </span><span class="hl-2">&#39;workspace.read&#39;</span><span class="hl-1">, </span><span class="hl-7">path:</span><span class="hl-1"> </span><span class="hl-2">&#39;input.txt&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">    ],</span><br/><span class="hl-1">    </span><span class="hl-7">steps:</span><span class="hl-1"> [{ </span><span class="hl-7">op:</span><span class="hl-1"> </span><span class="hl-2">&#39;plugin.prompt&#39;</span><span class="hl-1">, </span><span class="hl-7">input:</span><span class="hl-1"> </span><span class="hl-2">&#39;answer&#39;</span><span class="hl-1"> }],</span><br/><span class="hl-1">    </span><span class="hl-7">metrics:</span><span class="hl-1"> [{ </span><span class="hl-7">id:</span><span class="hl-1"> </span><span class="hl-2">&#39;expected-output&#39;</span><span class="hl-1">, </span><span class="hl-7">type:</span><span class="hl-1"> </span><span class="hl-2">&#39;output.equals&#39;</span><span class="hl-1">, </span><span class="hl-7">expected:</span><span class="hl-1"> </span><span class="hl-2">&#39;safe&#39;</span><span class="hl-1"> }],</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-7">baseEnvironment:</span><span class="hl-1"> { </span><span class="hl-7">PATH:</span><span class="hl-1"> </span><span class="hl-7">process</span><span class="hl-1">.</span><span class="hl-7">env</span><span class="hl-1">.</span><span class="hl-8">PATH</span><span class="hl-1"> ?? </span><span class="hl-2">&#39;&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">  </span><span class="hl-4">async</span><span class="hl-1"> </span><span class="hl-0">runPlugin</span><span class="hl-1">({ </span><span class="hl-7">input</span><span class="hl-1">, </span><span class="hl-7">cwd</span><span class="hl-1">, </span><span class="hl-7">env</span><span class="hl-1"> }) {</span><br/><span class="hl-1">    </span><span class="hl-4">void</span><span class="hl-1"> </span><span class="hl-7">input</span><br/><span class="hl-1">    </span><span class="hl-4">void</span><span class="hl-1"> </span><span class="hl-7">cwd</span><br/><span class="hl-1">    </span><span class="hl-6">return</span><span class="hl-1"> { </span><span class="hl-7">output:</span><span class="hl-1"> </span><span class="hl-7">env</span><span class="hl-1">.</span><span class="hl-8">EXPECTED</span><span class="hl-1">, </span><span class="hl-7">exitCode:</span><span class="hl-1"> </span><span class="hl-5">0</span><span class="hl-1"> }</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">})</span><br/><br/><span class="hl-7">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-7">result</span><span class="hl-1">.</span><span class="hl-7">status</span><span class="hl-1">)</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>steps</code> and <code>metrics</code> are the only supported plan fields. A plan must contain
+at least one step and one metric. Other input formats must be adapted by the
+caller before invoking the runner.</p>
+<p>The callback receives <code>{ input, cwd, env }</code>:</p>
+<ul>
+<li><code>input</code> is the <code>plugin.prompt</code> input;</li>
+<li><code>cwd</code> is the plan's private temporary workspace; and</li>
+<li><code>env</code> is a copied environment containing <code>baseEnvironment</code> plus plan setup values.</li>
+</ul>
+<p>The result contains <code>status</code>, structured <code>checks</code>, non-sensitive <code>reasons</code>, <code>actualOutput</code>, <code>exitCode</code>, and <code>durationMs</code>.</p>
+<p>Execution can be bounded with optional limits:</p>
+<pre><code class="js"><span class="hl-9">limits</span><span class="hl-1">: { </span><span class="hl-9">timeoutMs</span><span class="hl-1">: </span><span class="hl-5">30_000</span><span class="hl-1">, </span><span class="hl-9">maxSteps</span><span class="hl-1">: </span><span class="hl-5">100</span><span class="hl-1">, </span><span class="hl-9">maxMetrics</span><span class="hl-1">: </span><span class="hl-5">100</span><span class="hl-1"> }</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>timeoutMs</code> converts a slow plugin call into a timed-out execution. The host
+must still terminate the underlying process when true cancellation is needed.
+By default plugin and step errors are thrown. Set <code>errorMode: 'report'</code> to
+return a failed report containing an <code>execution-failed</code> check instead.</p>
+<p><code>runPortableCasePlan</code> options at a glance:</p>
+<ul>
+<li><code>plan</code> (<code>PortableCasePlan</code>, required): one evaluation scenario;</li>
+<li><code>runPlugin</code> (callback, required): the host function that invokes the plugin;</li>
+<li><code>baseEnvironment</code> (default <code>{}</code>): initial environment values;</li>
+<li><code>provenance</code> (default <code>{}</code>): caller metadata stored in the report;</li>
+<li><code>secrets</code> (default <code>[]</code>): values to detect and redact;</li>
+<li><code>fixtures</code> (default <code>[]</code>): setup and teardown hooks selected by the plan;</li>
+<li><code>stepRegistry</code> and <code>metricRegistry</code>: built-in or custom operations and checks;</li>
+<li><code>limits.timeoutMs</code>: maximum wait for one plugin call;</li>
+<li><code>limits.maxSteps</code>: maximum plan steps, checked before workspace creation;</li>
+<li><code>limits.maxMetrics</code>: maximum checks, checked before execution;</li>
+<li><code>errorMode</code> (default <code>'throw'</code>): use <code>'report'</code> to return an
+<code>execution-failed</code> check instead of throwing plugin or step errors.</li>
+</ul>
+<h3 id="suite-fixture-and-multi-step-execution" class="tsd-anchor-link">Suite, fixture, and multi-step execution<a href="#suite-fixture-and-multi-step-execution" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>defineSuite</code>, <code>defineCase</code>, and <code>defineFixture</code> compose reusable evaluations. A
+case can contain multiple <code>steps</code>; repeated <code>plugin.prompt</code> steps receive the
+same session object, so hosts can implement multi-turn conversations. Plan
+validation rejects invalid schema versions, IDs, empty steps/metrics, malformed
+prompt steps, and duplicate metric IDs before a workspace is created.</p>
+<pre><code class="js"><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-8">suite</span><span class="hl-1"> = </span><span class="hl-0">defineSuite</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-7">id:</span><span class="hl-1"> </span><span class="hl-2">&#39;quality&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-7">fixtures:</span><span class="hl-1"> [</span><span class="hl-0">defineFixture</span><span class="hl-1">({</span><br/><span class="hl-1">    </span><span class="hl-7">id:</span><span class="hl-1"> </span><span class="hl-2">&#39;seed&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-0">setup</span><span class="hl-7">:</span><span class="hl-1"> ({ </span><span class="hl-7">environment</span><span class="hl-1"> }) </span><span class="hl-4">=&gt;</span><span class="hl-1"> </span><span class="hl-7">environment</span><span class="hl-1">.</span><span class="hl-0">set</span><span class="hl-1">(</span><span class="hl-2">&#39;EXPECTED&#39;</span><span class="hl-1">, </span><span class="hl-2">&#39;safe&#39;</span><span class="hl-1">),</span><br/><span class="hl-1">  })],</span><br/><span class="hl-1">  </span><span class="hl-7">cases:</span><span class="hl-1"> [</span><span class="hl-0">defineCase</span><span class="hl-1">({</span><br/><span class="hl-1">    </span><span class="hl-7">id:</span><span class="hl-1"> </span><span class="hl-2">&#39;answer&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-7">fixtures:</span><span class="hl-1"> [</span><span class="hl-2">&#39;seed&#39;</span><span class="hl-1">],</span><br/><span class="hl-1">    </span><span class="hl-7">steps:</span><span class="hl-1"> [</span><br/><span class="hl-1">      { </span><span class="hl-7">op:</span><span class="hl-1"> </span><span class="hl-2">&#39;plugin.prompt&#39;</span><span class="hl-1">, </span><span class="hl-7">input:</span><span class="hl-1"> </span><span class="hl-2">&#39;first question&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">      { </span><span class="hl-7">op:</span><span class="hl-1"> </span><span class="hl-2">&#39;plugin.prompt&#39;</span><span class="hl-1">, </span><span class="hl-7">input:</span><span class="hl-1"> </span><span class="hl-2">&#39;follow-up question&#39;</span><span class="hl-1"> },</span><br/><span class="hl-1">    ],</span><br/><span class="hl-1">    </span><span class="hl-7">metrics:</span><span class="hl-1"> [{ </span><span class="hl-7">id:</span><span class="hl-1"> </span><span class="hl-2">&#39;answer&#39;</span><span class="hl-1">, </span><span class="hl-7">type:</span><span class="hl-1"> </span><span class="hl-2">&#39;output.contains&#39;</span><span class="hl-1">, </span><span class="hl-7">expected:</span><span class="hl-1"> </span><span class="hl-2">&#39;safe&#39;</span><span class="hl-1"> }],</span><br/><span class="hl-1">  })],</span><br/><span class="hl-1">})</span><br/><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-8">report</span><span class="hl-1"> = </span><span class="hl-6">await</span><span class="hl-1"> </span><span class="hl-0">runSuite</span><span class="hl-1">({ </span><span class="hl-7">suite</span><span class="hl-1">, </span><span class="hl-7">runPlugin</span><span class="hl-1">, </span><span class="hl-7">reporters:</span><span class="hl-1"> {</span><br/><span class="hl-1">  </span><span class="hl-0">json</span><span class="hl-7">:</span><span class="hl-1"> </span><span class="hl-7">value</span><span class="hl-1"> </span><span class="hl-4">=&gt;</span><span class="hl-1"> </span><span class="hl-7">console</span><span class="hl-1">.</span><span class="hl-0">log</span><span class="hl-1">(</span><span class="hl-8">JSON</span><span class="hl-1">.</span><span class="hl-0">stringify</span><span class="hl-1">(</span><span class="hl-7">value</span><span class="hl-1">)),</span><br/><span class="hl-1">} })</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Each case returns the same runner-native report shape as
+<code>runPortableCasePlan</code>. A suite wraps those case reports and adds suite-level
+summary fields.</p>
+<p><code>runSuite</code> requires <code>suite</code> and <code>runPlugin</code>. Optional <code>reporters</code> (default
+<code>{}</code>) receive the completed suite report by name. Optional environment,
+secret, registry, tool, network, and database settings are passed to each
+case when supplied.</p>
+<h3 id="registered-steps-and-metrics" class="tsd-anchor-link">Registered steps and metrics<a href="#registered-steps-and-metrics" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p><code>createStepRegistry()</code> adds execution operations without changing the runner
+loop. <code>createMetricRegistry()</code> adds checks against the collected evidence.
+Built-in metrics include output equality/containment, timeout, file existence,
+credential-like secret detection, and expected tool calls. Hosts can return
+<code>timedOut</code>, <code>files</code>, and <code>toolCalls</code> from <code>runPlugin</code> for those checks.</p>
+<p>The runner also exports isolated test adapters: <code>createMockTools()</code> records tool
+calls, <code>createMockNetwork()</code> serves declared routes and records requests, and
+<code>createTemporaryDatabase()</code> provides an in-memory store scoped to one run.
+Evidence includes session messages, tool calls, network requests, workspace
+files, timeout state, and the final execution.</p>
+<p><code>createReporterRegistry()</code> provides JSON, Markdown, and JUnit renderers behind
+one interface. Custom reporters can be registered without changing execution.
+The JUnit renderer escapes XML special characters in generated attributes.</p>
+<p>Registries expose a small common vocabulary: <code>register(name, handler)</code> adds an
+extension, <code>has(name)</code> checks availability, and <code>types()</code> lists registered
+names. Reporter registries additionally expose <code>render(name, report)</code>.</p>
+<h2 id="report-shape" class="tsd-anchor-link">Report shape<a href="#report-shape" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><code>runPortableCasePlan</code> returns a single-case report with these stable fields:</p>
+<pre><code class="json"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;reportSchemaVersion&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;reportId&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;uuid&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;runId&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;uuid&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;status&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;passed&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;reasons&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;checks&quot;</span><span class="hl-1">: [</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;id&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;expected-output&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;status&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;passed&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;passed&quot;</span><span class="hl-1">: </span><span class="hl-4">true</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;type&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;output.equals&quot;</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  ],</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;actualOutput&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;safe&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;exitCode&quot;</span><span class="hl-1">: </span><span class="hl-5">0</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;durationMs&quot;</span><span class="hl-1">: </span><span class="hl-5">4</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;startedAt&quot;</span><span class="hl-1">: </span><span class="hl-5">1710000000000</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;finishedAt&quot;</span><span class="hl-1">: </span><span class="hl-5">1710000000004</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;summary&quot;</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;status&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;passed&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;totalCases&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;passedCases&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;failedCases&quot;</span><span class="hl-1">: </span><span class="hl-5">0</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;provenance&quot;</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;schemeId&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;portable-smoke&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;schemeVersion&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;evidence&quot;</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;files&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;toolCalls&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;networkRequests&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;timedOut&quot;</span><span class="hl-1">: </span><span class="hl-4">false</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;messages&quot;</span><span class="hl-1">: []</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>status</code> is <code>passed</code> when every metric passes and <code>failed</code> otherwise. Failed
+checks are listed in <code>checks</code>, with safe human-readable explanations in
+<code>reasons</code>. Evidence is intended for diagnostics and reporting; hosts should
+still redact credentials before exposing reports outside a trusted boundary.</p>
+<p>For a suite, the top-level report contains <code>suite</code>, <code>cases</code>, and a summary with
+<code>totalCases</code>, <code>passedCases</code>, and <code>failedCases</code>. Each entry in <code>cases</code> is a
+single-case report with the shape above.</p>
+<h2 id="extension-api" class="tsd-anchor-link">Extension API<a href="#extension-api" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The runner is extensible without changing its execution loop:</p>
+<pre><code class="js"><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-8">stepRegistry</span><span class="hl-1"> = </span><span class="hl-0">createStepRegistry</span><span class="hl-1">().</span><span class="hl-0">register</span><span class="hl-1">(</span><br/><span class="hl-1">  </span><span class="hl-2">&#39;custom.prepare&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-4">async</span><span class="hl-1"> (</span><span class="hl-7">step</span><span class="hl-1">, </span><span class="hl-7">context</span><span class="hl-1">) </span><span class="hl-4">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-7">context</span><span class="hl-1">.</span><span class="hl-7">environment</span><span class="hl-1">.</span><span class="hl-8">PREPARED</span><span class="hl-1"> = </span><span class="hl-0">String</span><span class="hl-1">(</span><span class="hl-7">step</span><span class="hl-1">.</span><span class="hl-7">value</span><span class="hl-1">)</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">)</span><br/><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-8">metricRegistry</span><span class="hl-1"> = </span><span class="hl-0">createMetricRegistry</span><span class="hl-1">().</span><span class="hl-0">register</span><span class="hl-1">(</span><br/><span class="hl-1">  </span><span class="hl-2">&#39;output.startsWith&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  ({ </span><span class="hl-7">metric</span><span class="hl-1">, </span><span class="hl-7">output</span><span class="hl-1"> }) </span><span class="hl-4">=&gt;</span><span class="hl-1"> </span><span class="hl-7">output</span><span class="hl-1">.</span><span class="hl-0">startsWith</span><span class="hl-1">(</span><span class="hl-7">metric</span><span class="hl-1">.</span><span class="hl-7">expected</span><span class="hl-1">),</span><br/><span class="hl-1">)</span><br/><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-8">reporters</span><span class="hl-1"> = </span><span class="hl-0">createReporterRegistry</span><span class="hl-1">().</span><span class="hl-0">register</span><span class="hl-1">(</span><br/><span class="hl-1">  </span><span class="hl-2">&#39;text&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-7">report</span><span class="hl-1"> </span><span class="hl-4">=&gt;</span><span class="hl-1"> </span><span class="hl-2">`</span><span class="hl-4">${</span><span class="hl-7">report</span><span class="hl-11">.</span><span class="hl-7">status</span><span class="hl-4">}</span><span class="hl-2">: </span><span class="hl-4">${</span><span class="hl-7">report</span><span class="hl-11">.</span><span class="hl-7">summary</span><span class="hl-11">?.</span><span class="hl-7">passedCases</span><span class="hl-11"> </span><span class="hl-1">??</span><span class="hl-11"> </span><span class="hl-5">0</span><span class="hl-4">}</span><span class="hl-2"> passed`</span><span class="hl-1">,</span><br/><span class="hl-1">)</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Pass <code>stepRegistry</code> and <code>metricRegistry</code> to <code>runPortableCasePlan</code> or <code>runSuite</code>.
+Use a reporter registry separately to render a completed report, or pass
+reporter functions in the <code>reporters</code> object accepted by <code>runSuite</code>. A custom
+step receives the step object and the runner execution context. A custom metric
+receives <code>{ metric, output, files, execution, evidence }</code> and returns a
+boolean. A custom reporter receives the completed report and may return a
+string or a promise for a string.</p>
+<h3 id="supported-portable-plan-operations" class="tsd-anchor-link">Supported Portable Plan operations<a href="#supported-portable-plan-operations" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Setup operations:</p>
+<ul>
+<li><code>environment.set</code> with a valid environment variable name and string value;</li>
+<li><code>workspace.write</code> with a relative path and string content; and</li>
+<li><code>workspace.read</code> with a relative path.</li>
+</ul>
+<p>Run operation:</p>
+<ul>
+<li><code>plugin.prompt</code> with a non-empty input string.</li>
+</ul>
+<p>Metrics:</p>
+<ul>
+<li><code>output.equals</code>;</li>
+<li><code>output.contains</code>;</li>
+<li><code>output.notContains</code>;</li>
+<li><code>no-timeout</code>;</li>
+<li><code>file-exists</code>;</li>
+<li><code>no-secret</code>; and</li>
+<li><code>tool-calls</code>.</li>
+</ul>
+<p>Only the multi-step/multi-metric plan shape is supported. Callers using another
+format must adapt it before invoking the runner.</p>
+<p>Plans must contain at least one metric. Unsupported operations and malformed
+actions fail before the plugin callback is invoked.</p>
+<h2 id="security-boundaries" class="tsd-anchor-link">Security boundaries<a href="#security-boundaries" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>This package is a bounded plan runner, not a general-purpose command executor.</p>
+<ul>
+<li>It never starts a process and never launches a web server.</li>
+<li>It has no DSH imports or DSH runtime dependencies.</li>
+<li>Each invocation gets a fresh temporary workspace that is removed in a <code>finally</code> block.</li>
+<li>Workspace paths must be relative, reject NUL bytes, and reject path components named <code>..</code>; resolved paths must remain inside the temporary workspace.</li>
+<li>Environment setup accepts only shell-compatible variable names and string values without NUL bytes.</li>
+<li>The host callback is the trust boundary for plugin execution. Hosts must apply their own process, credential, network, and filesystem restrictions.</li>
+<li>Assertion failure reasons do not include assertion values, preventing a secret supplied to <code>output.notContains</code> from being copied into the result reason.</li>
+</ul>
+<p>The runner does not promise that a plugin callback is safe. Do not pass untrusted callbacks without an appropriate host sandbox.</p>
+<h2 id="development" class="tsd-anchor-link">Development<a href="#development" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>This is an independent Git/npm repository. The companion DSH integration remains in <a href="media/dsh-agent-observe"><code>dsh-agent-observe</code></a>, which can provide the callback and DSH-specific lifecycle without being imported by this package.</p>
+<p>The package includes a CLI as well as the library API. The public package
+boundary is the package root and the explicit <code>./package.json</code> metadata export.</p>
+<p>Generate the complete API reference directly from the TypeScript source:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">docs:generate</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">docs:check</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The hand-written <a href="media/index.html"><code>docs/index.html</code></a> is the quick-start
+guide; the generated reference is in <a href="media/index-1.html"><code>docs/api</code></a>.</p>
+<h2 id="testing-and-verification" class="tsd-anchor-link">Testing and verification<a href="#testing-and-verification" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Run the local test suite:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">test</span>
+</code><button type="button">Copy</button></pre>
+
+<p>Run the local package verification script:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">verify</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The verification script checks the 300-line limit, builds TypeScript, runs the
+tests, validates generated TypeDoc, and performs <code>npm pack --dry-run --json</code>.
+The dry-run package should contain only the public source, type declarations,
+README, license, and package metadata. A direct package smoke check should
+import the package root and exercise both a passing <code>output.contains</code> plan and
+a rejected traversal plan.</p>
+<h2 id="license" class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>MIT. See <a href="media/LICENSE"><code>LICENSE</code></a>.</p>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#dsh-plugin-evaluationportable-runner"><span>@dsh-<wbr/>plugin-<wbr/>evaluation/portable-<wbr/>runner</span></a>
+<ul>
+<li><a href="#what-and-why"><span>What and why</span></a></li>
+<li>
+<ul>
+<li><a href="#terminology"><span>Terminology</span></a></li></ul></li>
+<li><a href="#install"><span>Install</span></a></li>
+<li><a href="#cli"><span>CLI</span></a></li>
+<li><a href="#release"><span>Release</span></a></li>
+<li><a href="#api"><span>API</span></a></li>
+<li>
+<ul>
+<li><a href="#suite-fixture-and-multi-step-execution"><span>Suite, fixture, and multi-<wbr/>step execution</span></a></li>
+<li><a href="#registered-steps-and-metrics"><span>Registered steps and metrics</span></a></li></ul></li>
+<li><a href="#report-shape"><span>Report shape</span></a></li>
+<li><a href="#extension-api"><span>Extension <wbr/>API</span></a></li>
+<li>
+<ul>
+<li><a href="#supported-portable-plan-operations"><span>Supported <wbr/>Portable <wbr/>Plan operations</span></a></li></ul></li>
+<li><a href="#security-boundaries"><span>Security boundaries</span></a></li>
+<li><a href="#development"><span>Development</span></a></li>
+<li><a href="#testing-and-verification"><span>Testing and verification</span></a></li>
+<li><a href="#license"><span>License</span></a></li></ul></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="modules.html">Portable Runner API - v0.1.8</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>
