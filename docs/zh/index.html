@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="@dsh-plugin-evaluation/portable-runner 中文 API 文档"><meta name="theme-color" content="#0b1018">
+    <title>Portable Runner API · 中文</title><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css">
+  </head>
+  <body>
+    <header class="site-header"><a class="brand" href="#top" aria-label="Portable Runner API 首页"><span class="brand-mark" aria-hidden="true">PR</span><span><strong>Portable Runner</strong><small>API 文档</small></span></a><div class="header-meta"><span class="version-badge">v0.1.6</span><a href="../">English</a><a href="../ja/">日本語</a><a href="https://www.npmjs.com/package/@dsh-plugin-evaluation/portable-runner">npm</a><a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner">GitHub</a></div></header>
+    <div class="page-shell" id="top">
+      <nav class="sidebar" aria-label="文档导航"><div class="search-wrap"><label for="doc-search">搜索文档</label><input id="doc-search" type="search" placeholder="搜索 API…" autocomplete="off"><kbd>/</kbd></div><p class="nav-label">阅读</p><a class="nav-link active" href="#quick-start">快速开始</a><a class="nav-link" href="#plans">评测计划</a><a class="nav-link" href="#reports">报告</a><a class="nav-link" href="#extensions">扩展</a><a class="nav-link" href="#safety">安全边界</a><p class="nav-label">API</p><a class="nav-link" href="#quick-start">runPortableCasePlan</a><a class="nav-link" href="#plans">runSuite</a><a class="nav-link" href="#extensions">Registry</a><a class="nav-link" href="#safety">测试适配器</a><a class="nav-link" href="#release">发布</a></nav>
+      <main class="content">
+        <section class="hero searchable" data-search="portable runner api 中文 评测"><p class="eyebrow">@dsh-plugin-evaluation / portable-runner</p><h1>运行可移植评测。<br><em>让契约随处执行。</em></h1><p class="hero-copy">面向 DSH Portable Case Plan 的独立执行引擎。接入自己的插件宿主，获得统一、结构化的评测报告。</p><div class="hero-actions"><a class="button primary" href="#quick-start">开始构建 <span aria-hidden="true">→</span></a><a class="button secondary" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/README.md">阅读 README</a></div></section>
+        <div class="mobile-nav" aria-label="移动端文档导航"><a href="#quick-start">快速开始</a><a href="#plans">评测计划</a><a href="#reports">报告</a><a href="#extensions">扩展</a><a href="#safety">安全边界</a></div>
+        <section class="doc-section searchable" id="quick-start" data-search="快速开始 安装 npm runPortableCasePlan"><div class="section-heading"><span class="section-number">01</span><div><p class="eyebrow">第一步</p><h2>快速开始</h2></div></div><p>在 Node.js 20 或更高版本的宿主中安装 Runner。Runner 不会启动进程或 Web 服务，插件执行由你的 callback 负责。</p><div class="code-block"><button class="copy-button" type="button" data-copy="install-command">复制</button><pre id="install-command"><code>npm install @dsh-plugin-evaluation/portable-runner@0.1.6</code></pre></div><div class="code-block"><button class="copy-button" type="button" data-copy="quick-example">复制</button><pre id="quick-example"><code>import { runPortableCasePlan } from '@dsh-plugin-evaluation/portable-runner'
+
+const report = await runPortableCasePlan({
+  plan: {
+    schemaVersion: 1,
+    id: 'portable-smoke',
+    title: 'Portable runner smoke test',
+    setup: [{ op: 'environment.set', name: 'EXPECTED', value: 'safe' }],
+    steps: [{ op: 'plugin.prompt', input: 'answer' }],
+    metrics: [{ id: 'expected-output', type: 'output.equals', expected: 'safe' }],
+  },
+  async runPlugin({ env }) { return { output: env.EXPECTED, exitCode: 0 } },
+})
+
+console.log(report.status) // passed</code></pre></div></section>
+        <section class="doc-section searchable" id="plans" data-search="评测计划 schemaVersion steps metrics setup workspace plugin prompt"><div class="section-heading"><span class="section-number">02</span><div><p class="eyebrow">核心契约</p><h2>Portable 评测计划</h2></div></div><p>计划由受限 setup、明确的插件 steps 和可复用 metrics 组成。新计划应始终使用 <code>steps</code> 与 <code>metrics</code>。</p><div class="api-grid"><article class="api-card"><span class="api-kind">PLAN</span><h3>PortableCasePlan</h3><p>描述一个确定性的评测用例。</p><dl><dt><code>schemaVersion</code></dt><dd>当前为 <code>1</code>。</dd><dt><code>setup</code></dt><dd>支持环境变量和工作区文件操作。</dd><dt><code>steps</code></dt><dd>一个或多个 <code>plugin.prompt</code> 或注册操作。</dd><dt><code>metrics</code></dt><dd>至少一个拥有唯一 id 和 type 的指标。</dd></dl></article><article class="api-card"><span class="api-kind">SUITE</span><h3>PortableSuite</h3><p>组合可复用的 cases 和 fixture 生命周期。</p><dl><dt><code>fixtures</code></dt><dd>共享 setup 与 teardown 钩子。</dd><dt><code>cases</code></dt><dd>独立执行的 Portable cases。</dd><dt><code>version</code></dt><dd>记录在 provenance 中的套件版本。</dd></dl></article></div><div class="callout"><strong>兼容说明</strong><span>旧版 <code>run</code> 加 <code>assertions</code> 仍会被规范化，但新计划应使用 <code>steps</code> 加 <code>metrics</code>。</span></div></section>
+        <section class="doc-section searchable" id="reports" data-search="报告 reportSchemaVersion checks actualOutput summary provenance evidence"><div class="section-heading"><span class="section-number">03</span><div><p class="eyebrow">执行结果</p><h2>Runner-native 报告</h2></div></div><p>每次单用例执行都返回统一报告契约。宿主可以直接持久化、渲染或跨集成边界传递，无需转换字段。</p><div class="report-table"><div><span>reportSchemaVersion</span><b>1</b></div><div><span>status</span><b class="success-text">passed · failed</b></div><div><span>checks</span><b>结构化指标结果</b></div><div><span>actualOutput</span><b>插件最终输出</b></div><div><span>summary</span><b>通过 / 失败用例数</b></div><div><span>provenance</span><b>计划和调用方身份</b></div><div><span>evidence</span><b>文件、调用、消息、超时状态</b></div></div><div class="code-block"><button class="copy-button" type="button" data-copy="report-example">复制</button><pre id="report-example"><code>{
+  reportSchemaVersion: 1,
+  reportId: 'uuid',
+  runId: 'uuid',
+  status: 'passed',
+  checks: [{ id: 'expected-output', passed: true }],
+  actualOutput: 'safe',
+  summary: { totalCases: 1, passedCases: 1, failedCases: 0 },
+  provenance: { schemeId: 'portable-smoke', schemeVersion: 1 },
+  evidence: { files: [], toolCalls: [], messages: [] }
+}</code></pre></div></section>
+        <section class="doc-section searchable" id="extensions" data-search="扩展 自定义 step metric reporter registry"><div class="section-heading"><span class="section-number">04</span><div><p class="eyebrow">按需扩展</p><h2>扩展点</h2></div></div><p>无需修改执行循环即可扩展词汇表。Registry 保持小而明确，也便于检查。</p><div class="code-block"><button class="copy-button" type="button" data-copy="extension-example">复制</button><pre id="extension-example"><code>const steps = createStepRegistry().register(
+  'custom.prepare',
+  (step, context) => { context.environment.PREPARED = String(step.value) },
+)
+
+const metrics = createMetricRegistry().register(
+  'output.startsWith',
+  ({ metric, output }) => output.startsWith(metric.expected),
+)</code></pre></div><div class="api-grid three"><article class="api-card"><span class="api-kind">STEPS</span><h3>createStepRegistry</h3><p>注册接收 step 和执行上下文的受限操作。</p></article><article class="api-card"><span class="api-kind">METRICS</span><h3>createMetricRegistry</h3><p>注册基于输出和 evidence 的布尔评估器。</p></article><article class="api-card"><span class="api-kind">REPORTERS</span><h3>createReporterRegistry</h3><p>渲染 JSON、Markdown、JUnit 或自定义格式。</p></article></div></section>
+        <section class="doc-section searchable" id="safety" data-search="安全 safety workspace credentials sandbox host callback"><div class="section-heading"><span class="section-number">05</span><div><p class="eyebrow">边界</p><h2>安全边界</h2></div></div><ul class="safety-list"><li><strong>独立工作区</strong><span>每次调用都会创建临时工作区，并在 <code>finally</code> 中删除。</span></li><li><strong>路径受限</strong><span>工作区路径必须相对，拒绝 NUL 字节、遍历和越界。</span></li><li><strong>宿主负责执行</strong><span>callback 是进程、网络、文件系统和凭证的信任边界。</span></li><li><strong>无 DSH 依赖</strong><span>包与宿主无关，不启动进程，也不启动 Web 服务。</span></li></ul></section>
+        <section class="doc-section searchable" id="release" data-search="发布 release npm github actions"><div class="section-heading"><span class="section-number">06</span><div><p class="eyebrow">放心发布</p><h2>发布与验证</h2></div></div><p>发布前运行测试和打包预览。带版本 tag 的提交会在版本检查后由 GitHub Actions 发布。</p><div class="code-block compact"><pre><code>npm test
+npm run verify
+npm version patch
+git push origin main --follow-tags</code></pre></div><p class="muted">来源：<a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts">公开类型声明</a> · <a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/README.md">README</a></p></section>
+      </main><aside class="release-card"><span class="status-dot"></span><span>当前版本</span><strong>0.1.6</strong><p>面向 DSH Portable Case Plan 的独立评测执行引擎。</p><a href="https://www.npmjs.com/package/@dsh-plugin-evaluation/portable-runner">在 npm 查看 <span aria-hidden="true">↗</span></a></aside>
+    </div><footer class="site-footer"><span>MIT 协议 · DSH Plugin Evaluation</span><a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner">打开仓库 ↗</a></footer><script src="../app.js" defer></script>
+  </body>
+</html>

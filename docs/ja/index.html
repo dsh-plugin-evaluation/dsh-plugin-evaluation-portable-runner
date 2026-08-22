@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="@dsh-plugin-evaluation/portable-runner 日本語 API ドキュメント"><meta name="theme-color" content="#0b1018">
+    <title>Portable Runner API · 日本語</title><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css">
+  </head>
+  <body>
+    <header class="site-header"><a class="brand" href="#top" aria-label="Portable Runner API ホーム"><span class="brand-mark" aria-hidden="true">PR</span><span><strong>Portable Runner</strong><small>API リファレンス</small></span></a><div class="header-meta"><span class="version-badge">v0.1.6</span><a href="../">English</a><a href="../zh/">中文</a><a href="https://www.npmjs.com/package/@dsh-plugin-evaluation/portable-runner">npm</a><a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner">GitHub</a></div></header>
+    <div class="page-shell" id="top">
+      <nav class="sidebar" aria-label="ドキュメントナビゲーション"><div class="search-wrap"><label for="doc-search">ドキュメントを検索</label><input id="doc-search" type="search" placeholder="API を検索…" autocomplete="off"><kbd>/</kbd></div><p class="nav-label">読む</p><a class="nav-link active" href="#quick-start">クイックスタート</a><a class="nav-link" href="#plans">プラン</a><a class="nav-link" href="#reports">レポート</a><a class="nav-link" href="#extensions">拡張</a><a class="nav-link" href="#safety">安全境界</a><p class="nav-label">API</p><a class="nav-link" href="#quick-start">runPortableCasePlan</a><a class="nav-link" href="#plans">runSuite</a><a class="nav-link" href="#extensions">Registry</a><a class="nav-link" href="#safety">テストアダプター</a><a class="nav-link" href="#release">リリース</a></nav>
+      <main class="content">
+        <section class="hero searchable" data-search="portable runner api 日本語 評価"><p class="eyebrow">@dsh-plugin-evaluation / portable-runner</p><h1>ポータブル評価を実行。<br><em>契約をどこでも共有。</em></h1><p class="hero-copy">DSH Portable Case Plan のためのホスト非依存実行エンジンです。独自のプラグインホストを接続し、統一された構造化レポートを受け取れます。</p><div class="hero-actions"><a class="button primary" href="#quick-start">ビルドを開始 <span aria-hidden="true">→</span></a><a class="button secondary" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/README.md">README を読む</a></div></section>
+        <div class="mobile-nav" aria-label="モバイルドキュメントナビゲーション"><a href="#quick-start">クイックスタート</a><a href="#plans">プラン</a><a href="#reports">レポート</a><a href="#extensions">拡張</a><a href="#safety">安全境界</a></div>
+        <section class="doc-section searchable" id="quick-start" data-search="クイックスタート インストール npm runPortableCasePlan"><div class="section-heading"><span class="section-number">01</span><div><p class="eyebrow">最初の一歩</p><h2>クイックスタート</h2></div></div><p>Node.js 20 以上のホストにインストールします。Runner はプロセスや Web サーバーを起動せず、プラグイン実行は callback が担当します。</p><div class="code-block"><button class="copy-button" type="button" data-copy="install-command">コピー</button><pre id="install-command"><code>npm install @dsh-plugin-evaluation/portable-runner@0.1.6</code></pre></div><div class="code-block"><button class="copy-button" type="button" data-copy="quick-example">コピー</button><pre id="quick-example"><code>import { runPortableCasePlan } from '@dsh-plugin-evaluation/portable-runner'
+
+const report = await runPortableCasePlan({
+  plan: {
+    schemaVersion: 1,
+    id: 'portable-smoke',
+    title: 'Portable runner smoke test',
+    setup: [{ op: 'environment.set', name: 'EXPECTED', value: 'safe' }],
+    steps: [{ op: 'plugin.prompt', input: 'answer' }],
+    metrics: [{ id: 'expected-output', type: 'output.equals', expected: 'safe' }],
+  },
+  async runPlugin({ env }) { return { output: env.EXPECTED, exitCode: 0 } },
+})
+
+console.log(report.status) // passed</code></pre></div></section>
+        <section class="doc-section searchable" id="plans" data-search="プラン schemaVersion steps metrics setup workspace plugin prompt"><div class="section-heading"><span class="section-number">02</span><div><p class="eyebrow">契約</p><h2>Portable プラン</h2></div></div><p>プランは制限された setup、明示的な plugin steps、再利用可能な metrics で構成されます。新しいプランでは <code>steps</code> と <code>metrics</code> を使用してください。</p><div class="api-grid"><article class="api-card"><span class="api-kind">PLAN</span><h3>PortableCasePlan</h3><p>1 つの決定的な評価ケースを定義します。</p><dl><dt><code>schemaVersion</code></dt><dd>現在は <code>1</code>。</dd><dt><code>setup</code></dt><dd>環境変数とワークスペース操作。</dd><dt><code>steps</code></dt><dd><code>plugin.prompt</code> または登録済み操作。</dd><dt><code>metrics</code></dt><dd>一意な id と type を持つ指標。</dd></dl></article><article class="api-card"><span class="api-kind">SUITE</span><h3>PortableSuite</h3><p>再利用可能なケースと fixture lifecycle をまとめます。</p><dl><dt><code>fixtures</code></dt><dd>共有 setup と teardown hook。</dd><dt><code>cases</code></dt><dd>独立して実行されるケース。</dd><dt><code>version</code></dt><dd>provenance に記録される suite バージョン。</dd></dl></article></div><div class="callout"><strong>互換性</strong><span>旧来の <code>run</code> と <code>assertions</code> も正規化されますが、新しいプランでは <code>steps</code> と <code>metrics</code> を推奨します。</span></div></section>
+        <section class="doc-section searchable" id="reports" data-search="レポート reportSchemaVersion checks actualOutput summary provenance evidence"><div class="section-heading"><span class="section-number">03</span><div><p class="eyebrow">実行結果</p><h2>Runner-native レポート</h2></div></div><p>すべての単一ケース実行は同じレポート契約を返します。変換なしで保存、表示、統合境界を越えて受け渡せます。</p><div class="report-table"><div><span>reportSchemaVersion</span><b>1</b></div><div><span>status</span><b class="success-text">passed · failed</b></div><div><span>checks</span><b>構造化された指標結果</b></div><div><span>actualOutput</span><b>プラグインの最終出力</b></div><div><span>summary</span><b>成功 / 失敗ケース数</b></div><div><span>provenance</span><b>プランと呼び出し元の識別情報</b></div><div><span>evidence</span><b>ファイル、呼び出し、メッセージ、timeout</b></div></div><div class="code-block"><button class="copy-button" type="button" data-copy="report-example">コピー</button><pre id="report-example"><code>{
+  reportSchemaVersion: 1,
+  reportId: 'uuid',
+  runId: 'uuid',
+  status: 'passed',
+  checks: [{ id: 'expected-output', passed: true }],
+  actualOutput: 'safe',
+  summary: { totalCases: 1, passedCases: 1, failedCases: 0 },
+  provenance: { schemeId: 'portable-smoke', schemeVersion: 1 },
+  evidence: { files: [], toolCalls: [], messages: [] }
+}</code></pre></div></section>
+        <section class="doc-section searchable" id="extensions" data-search="拡張 custom step metric reporter registry"><div class="section-heading"><span class="section-number">04</span><div><p class="eyebrow">カスタマイズ</p><h2>拡張ポイント</h2></div></div><p>実行ループを変更せずに語彙を拡張できます。Registry は明示的で確認しやすい設計です。</p><div class="code-block"><button class="copy-button" type="button" data-copy="extension-example">コピー</button><pre id="extension-example"><code>const steps = createStepRegistry().register(
+  'custom.prepare',
+  (step, context) => { context.environment.PREPARED = String(step.value) },
+)
+
+const metrics = createMetricRegistry().register(
+  'output.startsWith',
+  ({ metric, output }) => output.startsWith(metric.expected),
+)</code></pre></div><div class="api-grid three"><article class="api-card"><span class="api-kind">STEPS</span><h3>createStepRegistry</h3><p>step と実行コンテキストを受け取る操作を登録します。</p></article><article class="api-card"><span class="api-kind">METRICS</span><h3>createMetricRegistry</h3><p>出力と evidence を評価する boolean evaluator。</p></article><article class="api-card"><span class="api-kind">REPORTERS</span><h3>createReporterRegistry</h3><p>JSON、Markdown、JUnit、独自形式を出力します。</p></article></div></section>
+        <section class="doc-section searchable" id="safety" data-search="安全 safety workspace credentials sandbox host callback"><div class="section-heading"><span class="section-number">05</span><div><p class="eyebrow">境界</p><h2>安全境界</h2></div></div><ul class="safety-list"><li><strong>一時ワークスペース</strong><span>毎回新しい workspace を作り、<code>finally</code> で削除します。</span></li><li><strong>パス制限</strong><span>相対パスのみ許可し、NUL、traversal、workspace 外への escape を拒否します。</span></li><li><strong>ホストが実行を管理</strong><span>callback が process、network、filesystem、credentials の trust boundary です。</span></li><li><strong>DSH 依存なし</strong><span>ホスト非依存で、プロセスや Web サーバーを起動しません。</span></li></ul></section>
+        <section class="doc-section searchable" id="release" data-search="リリース release npm github actions"><div class="section-heading"><span class="section-number">06</span><div><p class="eyebrow">安心して公開</p><h2>リリースと検証</h2></div></div><p>公開前にテストとパッケージ dry-run を実行します。バージョン tag は確認後 GitHub Actions で公開されます。</p><div class="code-block compact"><pre><code>npm test
+npm run verify
+npm version patch
+git push origin main --follow-tags</code></pre></div><p class="muted">出典：<a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts">公開型定義</a> · <a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/README.md">README</a></p></section>
+      </main><aside class="release-card"><span class="status-dot"></span><span>現在のリリース</span><strong>0.1.6</strong><p>DSH Portable Case Plan のためのホスト非依存評価エンジン。</p><a href="https://www.npmjs.com/package/@dsh-plugin-evaluation/portable-runner">npm で見る <span aria-hidden="true">↗</span></a></aside>
+    </div><footer class="site-footer"><span>MIT ライセンス · DSH Plugin Evaluation</span><a href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner">リポジトリを開く ↗</a></footer><script src="../app.js" defer></script>
+  </body>
+</html>
