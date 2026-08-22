@@ -54,6 +54,7 @@ code { color: #a7e7ff; font-size: .92em; }
 .brand small, .brand strong { display: block; line-height: 1.15; }
 .brand small { color: var(--muted); font-size: 11px; margin-top: 4px; }
 .header-meta { display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: 13px; }
+.header-meta a { white-space: nowrap; }
 .version-badge { border: 1px solid #35677b; background: #102b38; color: var(--cyan); border-radius: 99px; padding: 3px 9px; font: 12px var(--mono); }
 
 .page-shell {
@@ -96,6 +97,26 @@ code { color: #a7e7ff; font-size: .92em; }
 .copy-button:hover { color: var(--cyan); border-color: #36728a; }
 .api-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 26px; }
 .api-grid.three { grid-template-columns: repeat(3, 1fr); }
+.api-index-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 26px; }
+.api-index-grid > div { display: grid; gap: 7px; align-content: start; border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(145deg, #142131, #101923); padding: 18px; }
+.api-index-grid a { color: var(--text); font: 13px var(--mono); }
+.api-index-grid a:hover { color: var(--cyan); }
+.api-reference { padding-top: 50px; }
+.api-entry { border: 1px solid var(--line); border-radius: 10px; background: rgba(17, 26, 38, .55); padding: 24px; margin: 18px 0; scroll-margin-top: 92px; }
+.api-entry-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.api-entry-heading h3 { margin: 7px 0 0; font: 20px var(--mono); color: var(--text); }
+.api-entry > p { color: var(--muted); max-width: 680px; }
+.signature { border-left: 2px solid var(--cyan); background: #62d8ff0b; padding: 12px 14px; margin: 18px 0; overflow-x: auto; }
+.signature code { white-space: nowrap; color: #c8efff; }
+.api-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.api-detail-grid h4 { color: var(--text); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 10px; }
+.api-detail-grid dl { margin: 0; }
+.api-detail-grid dt { color: var(--text); font: 12px var(--mono); margin-top: 10px; }
+.api-detail-grid dd { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+.api-detail-grid p { color: var(--muted); font-size: 13px; margin: 0; }
+.source-link { color: var(--cyan); font-size: 12px; }
+.api-entry-heading .source-link { white-space: nowrap; padding-top: 5px; }
+.source-line { margin-top: 15px !important; }
 .api-card { border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(145deg, #142131, #101923); padding: 20px; }
 .api-kind { color: var(--amber); font: 10px var(--mono); letter-spacing: .12em; }
 .api-card h3 { font-size: 17px; margin: 8px 0; }
@@ -127,7 +148,7 @@ code { color: #a7e7ff; font-size: .92em; }
 
 @media (max-width: 1080px) {
   .page-shell { grid-template-columns: 180px minmax(0, 760px); max-width: 980px; }
-  .release-card { display: none; }
+  .release-card { display: block; grid-column: 2; }
 }
 @media (max-width: 720px) {
   .site-header { padding: 0 18px; }
@@ -137,15 +158,24 @@ code { color: #a7e7ff; font-size: .92em; }
   .sidebar { position: static; }
   .sidebar .nav-label, .sidebar .nav-link { display: none; }
   .search-wrap { margin-bottom: 14px; }
-  .mobile-nav { display: flex; gap: 7px; overflow-x: auto; padding: 8px 0 20px; scrollbar-width: none; }
+  .mobile-nav { display: flex; flex-wrap: wrap; gap: 7px; overflow: visible; padding: 8px 0 20px; }
   .mobile-nav a { white-space: nowrap; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 4px 10px; font-size: 12px; }
   .hero { padding: 24px 0 48px; }
   .hero h1 { font-size: 42px; }
   .hero-copy { font-size: 15px; }
   .doc-section { padding: 44px 0 50px; }
   .api-grid, .api-grid.three { grid-template-columns: 1fr; }
+  .api-index-grid, .api-detail-grid { grid-template-columns: 1fr; }
+  .api-entry { padding: 18px; }
+  .api-entry-heading { display: block; }
+  .api-entry-heading .source-link { display: inline-block; margin-top: 12px; }
   .safety-list li { grid-template-columns: 1fr; gap: 2px; }
   .site-footer { padding: 20px 18px; display: block; }
   .site-footer a { display: block; margin-top: 8px; }
 }
+html[lang="zh-CN"] .hero-copy,
+html[lang="zh-CN"] .release-card,
+html[lang="ja"] .hero-copy,
+html[lang="ja"] .release-card { word-break: keep-all; }
+.cjk-phrase { white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

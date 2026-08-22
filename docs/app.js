@@ -2,6 +2,41 @@ const search = document.querySelector('#doc-search')
 const sections = [...document.querySelectorAll('.searchable')]
 const links = [...document.querySelectorAll('.nav-link')]
 
+document.querySelectorAll('.api-grid.three').forEach(grid => {
+  if (!grid.id) grid.id = 'registries'
+})
+
+const symbolIds = {
+  PortableCasePlan: 'portable-case-plan',
+  PortableSuite: 'portable-suite',
+  createStepRegistry: 'create-step-registry',
+  createMetricRegistry: 'create-metric-registry',
+  createReporterRegistry: 'create-reporter-registry',
+}
+document.querySelectorAll('.api-card h3').forEach(heading => {
+  const id = symbolIds[heading.textContent.trim()]
+  if (id && !heading.parentElement.id) heading.parentElement.id = id
+})
+document.querySelectorAll('.report-table').forEach(table => {
+  const firstRow = table.firstElementChild
+  if (firstRow && !firstRow.id) firstRow.id = 'portable-case-result'
+})
+document.querySelectorAll('.api-index a').forEach(link => {
+  const symbol = link.textContent.trim()
+  if (symbolIds[symbol]) link.href = `#${symbolIds[symbol]}`
+  if (symbol === 'PortableCaseResult') link.href = '#portable-case-result'
+})
+
+const locale = document.documentElement.lang
+const heroCopy = document.querySelector('.hero-copy')
+if (heroCopy && locale === 'zh-CN') {
+  heroCopy.innerHTML = heroCopy.textContent.replace('插件执行由你的 callback 负责。', '<span class="cjk-phrase">插件执行由你的 callback 负责。</span>')
+}
+const apiIndexIntro = document.querySelector('#api-index > p')
+if (apiIndexIntro && locale === 'ja') {
+  apiIndexIntro.innerHTML = apiIndexIntro.innerHTML.replace('識別子とシグネチャ', '<span class="cjk-phrase">識別子とシグネチャ</span>')
+}
+
 function filterDocs(value) {
   const query = value.trim().toLowerCase()
   sections.forEach(section => {
@@ -36,7 +71,7 @@ document.querySelectorAll('.copy-button').forEach(button => {
       selection?.removeAllRanges()
     }
     const original = button.textContent
-    button.textContent = 'Copied'
+    button.textContent = button.dataset.copied ?? (document.documentElement.lang === 'zh-CN' ? '已复制' : document.documentElement.lang === 'ja' ? 'コピー済み' : 'Copied')
     window.setTimeout(() => { button.textContent = original }, 1400)
   })
 })
