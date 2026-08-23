@@ -69,11 +69,19 @@ test('metric registry returns stable checks for pass, fail, custom, async, and u
   const registry = createMetricRegistry({ custom: async context => context.value === 1 })
   const passed = await registry.evaluate({ id: 'm', type: 'custom' }, { value: 1 })
   const failed = await registry.evaluate({ id: 'm', type: 'custom' }, { value: 2 })
-  assert.deepEqual(passed, { id: 'm', passed: true, details: { type: 'custom' } })
+  assert.deepEqual(passed, { id: 'm', passed: true, score: 1, weight: 1, required: true, details: { type: 'custom' } })
   assert.equal(failed.passed, false)
   assert.equal(registry.has('output.equals'), true)
   assert.equal(registry.types().includes('custom'), true)
   assert.throws(() => registry.evaluate({ id: 'x', type: 'unknown' }, {}), /unsupported/)
+})
+
+test('metric registry keeps compatibility with legacy structured evaluator results', async () => {
+  const registry = createMetricRegistry({ legacy: () => ({ passed: true, details: { legacy: true } }) })
+  assert.deepEqual(await registry.evaluate({ id: 'legacy', type: 'legacy' }, {}), {
+    id: 'legacy', passed: true, score: 1, weight: 1, required: true,
+    details: { type: 'legacy', legacy: true },
+  })
 })
 
 test('reporter registry renders built-ins and custom reporters with argument validation', async () => {
@@ -124,6 +132,86 @@ test('runPortableCasePlan applies defaults, provenance, and errorMode report', a
   })
   assert.equal(reported.status, 'failed')
   assert.equal(reported.checks[0].id, 'execution-failed')
+})
+
+test('runPortableCasePlan computes weighted scores and honors required metrics', async () => {
+  const result = await runPortableCasePlan({
+    plan: validPlan({
+      scoring: { method: 'weighted-average', passScore: 0.8, weights: { correctness: 0.7, style: 0.3 }, required: ['correctness'] },
+      metrics: [
+        { id: 'correctness', type: 'quality', weight: 1, required: true },
+        { id: 'style', type: 'quality', weight: 1, required: false },
+      ],
+    }),
+    metricRegistry: createMetricRegistry({ quality: ({ metric }) => metric.id === 'correctness' ? 1 : 0.5 }),
+    async runPlugin() { return { output: 'ok' } },
+  })
+  assert.equal(result.status, 'passed')
+  assert.equal(result.score.value, 0.85)
+  assert.equal(result.score.requiredPassed, true)
+  assert.equal(result.checks[1].score, 0.5)
+
+  const requiredFailure = await runPortableCasePlan({
+    plan: validPlan({ scoring: { passScore: 0.1 }, metrics: [{ id: 'required', type: 'quality', required: true }] }),
+    metricRegistry: createMetricRegistry({ quality: () => 0 }),
+    async runPlugin() { return { output: 'ok' } },
+  })
+  assert.equal(requiredFailure.status, 'failed')
+  assert.equal(requiredFailure.score.requiredPassed, false)
+})
+
+test('optional metric failures do not fail a plan without a scoring threshold', async () => {
+  const result = await runPortableCasePlan({
+    plan: validPlan({ metrics: [
+      { id: 'required', type: 'quality', required: true },
+      { id: 'informational', type: 'quality', required: false },
+    ] }),
+    metricRegistry: createMetricRegistry({ quality: ({ metric }) => metric.id === 'required' }),
+    async runPlugin() { return { output: 'ok' } },
+  })
+  assert.equal(result.status, 'passed')
+  assert.equal(result.score.requiredPassed, true)
+  assert.equal(result.checks[1].passed, false)
+})
+
+test('runPortableCasePlan invokes a structured LLM judge adapter', async () => {
+  let received
+  const result = await runPortableCasePlan({
+    plan: validPlan({ metrics: [{ id: 'semantic', type: 'llm_judge', expected: 'safe', rubric: 'must be safe', passScore: 0.8 }] }),
+    judge: async input => { received = input; return { score: 0.9, confidence: 0.87, reason: '符合要求', details: { model: 'judge-1' } } },
+    async runPlugin() { return { output: 'safe' } },
+  })
+  assert.equal(result.status, 'passed')
+  assert.equal(result.checks[0].score, 0.9)
+  assert.equal(result.checks[0].confidence, 0.87)
+  assert.equal(received.metric.id, 'semantic')
+  assert.equal(received.expected, 'safe')
+  assert.equal(received.actual, 'safe')
+})
+
+test('runPortableCasePlan reports metric evaluation failures with score metadata', async () => {
+  const result = await runPortableCasePlan({
+    plan: validPlan({ metrics: [{ id: 'judge', type: 'llm_judge', expected: 'safe' }] }),
+    errorMode: 'report',
+    async runPlugin() { return { output: 'safe' } },
+  })
+  assert.equal(result.status, 'failed')
+  assert.deepEqual(result.checks[0], {
+    id: 'judge', passed: false, score: 0, weight: 1, required: true,
+    reason: '评测指标执行失败: llm_judge requires a judge adapter',
+    details: { type: 'llm_judge', code: 'metric-evaluation-failed' },
+  })
+})
+
+test('runPortableCasePlan rejects invalid scoring fields', async () => {
+  await assert.rejects(() => runPortableCasePlan({
+    plan: validPlan({ metrics: [{ id: 'm', type: 'quality', weight: -1 }] }),
+    async runPlugin() { return { output: 'ok' } },
+  }), /weight must be non-negative/)
+  await assert.rejects(() => runPortableCasePlan({
+    plan: validPlan({ metrics: [{ id: 'm', type: 'quality', passScore: 2 }] }),
+    async runPlugin() { return { output: 'ok' } },
+  }), /passScore must be between 0 and 1/)
 })
 
 test('runSuite validates cases, aggregates status, and invokes reporters', async () => {

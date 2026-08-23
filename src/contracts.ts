@@ -11,7 +11,17 @@ export interface PortableStep {
 export interface PortableMetric {
   readonly id: string
   readonly type: string
+  readonly weight?: number
+  readonly required?: boolean
+  readonly passScore?: number
   readonly [key: string]: unknown
+}
+
+export interface PortableScoringPolicy {
+  readonly method?: 'weighted-average'
+  readonly passScore?: number
+  readonly weights?: Readonly<Record<string, number>>
+  readonly required?: readonly string[]
 }
 
 /** A complete, host-independent evaluation scenario. */
@@ -23,6 +33,7 @@ export interface PortableCasePlan {
   readonly setup?: readonly PortableStep[]
   readonly steps: readonly PortableStep[]
   readonly metrics: readonly PortableMetric[]
+  readonly scoring?: PortableScoringPolicy
 }
 
 /** Result returned by the host-owned plugin callback. */
@@ -40,8 +51,21 @@ export interface PortablePluginExecution {
 export interface PortableCheck {
   readonly id: string
   readonly passed: boolean
+  readonly score: number
+  readonly weight: number
+  readonly required: boolean
   readonly reason?: string
+  readonly confidence?: number
   readonly details: Readonly<Record<string, unknown>>
+}
+
+export interface PortableScoreSummary {
+  readonly value: number
+  readonly scale: '0..1'
+  readonly passScore?: number
+  readonly totalWeight: number
+  readonly requiredPassed: boolean
+  readonly passed: boolean
 }
 
 /** Stable report returned for one executed case plan. */
@@ -52,6 +76,7 @@ export interface PortableCaseReport {
   readonly status: PortableStatus
   readonly reasons: readonly string[]
   readonly checks: readonly PortableCheck[]
+  readonly score: PortableScoreSummary
   readonly actualOutput: string
   readonly exitCode: number
   readonly durationMs: number

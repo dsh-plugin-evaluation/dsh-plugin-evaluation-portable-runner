@@ -7,6 +7,16 @@ export class PortableRunnerError extends Error {
 export type PortableMetric = Readonly<Record<string, unknown>> & {
   readonly id: string
   readonly type: string
+  readonly weight?: number
+  readonly required?: boolean
+  readonly passScore?: number
+}
+
+export interface PortableScoringPolicy {
+  readonly method?: 'weighted-average'
+  readonly passScore?: number
+  readonly weights?: Readonly<Record<string, number>>
+  readonly required?: readonly string[]
 }
 
 export interface PortableCasePlan {
@@ -17,6 +27,7 @@ export interface PortableCasePlan {
   readonly setup?: readonly PortableStep[]
   readonly steps: readonly PortableStep[]
   readonly metrics: readonly PortableMetric[]
+  readonly scoring?: PortableScoringPolicy
 }
 
 export interface PortablePluginExecution {
@@ -35,7 +46,8 @@ export interface PortableCaseResult {
   readonly runId: string
   readonly status: 'passed' | 'failed'
   readonly reasons: readonly string[]
-  readonly checks: readonly { readonly id: string; readonly passed: boolean; readonly reason?: string; readonly details?: Readonly<Record<string, unknown>> }[]
+  readonly checks: readonly { readonly id: string; readonly passed: boolean; readonly score: number; readonly weight: number; readonly required: boolean; readonly reason?: string; readonly confidence?: number; readonly details?: Readonly<Record<string, unknown>> }[]
+  readonly score: { readonly value: number; readonly scale: '0..1'; readonly passScore?: number; readonly totalWeight: number; readonly requiredPassed: boolean; readonly passed: boolean }
   readonly actualOutput: string
   readonly exitCode: number
   readonly durationMs: number
@@ -93,6 +105,7 @@ export interface PortableCase {
   readonly setup: readonly PortableStep[]
   readonly steps: readonly PortableStep[]
   readonly metrics: readonly PortableMetric[]
+  readonly scoring?: PortableScoringPolicy
 }
 
 export interface PortableSuite {
@@ -119,6 +132,7 @@ export function defineCase(input: {
   readonly setup?: readonly PortableStep[]
   readonly steps?: readonly PortableStep[]
   readonly metrics?: readonly PortableMetric[]
+  readonly scoring?: PortableScoringPolicy
 }): PortableCase
 
 export function defineSuite(input: {
@@ -135,8 +149,8 @@ export function createStepRegistry(custom?: Readonly<Record<string, (step: Porta
   readonly types: () => readonly string[]
 }
 
-export function createMetricRegistry(custom?: Readonly<Record<string, (context: Readonly<Record<string, unknown>>) => boolean>>): {
-  readonly register: (type: string, evaluator: (context: Readonly<Record<string, unknown>>) => boolean) => unknown
+export function createMetricRegistry(custom?: Readonly<Record<string, (context: Readonly<Record<string, unknown>>) => boolean | number | Readonly<{ score?: number; passed?: boolean; reason?: string; confidence?: number; details?: Readonly<Record<string, unknown>> }> | Promise<boolean | number | Readonly<{ score?: number; passed?: boolean; reason?: string; confidence?: number; details?: Readonly<Record<string, unknown>> >>>>): {
+  readonly register: (type: string, evaluator: (context: Readonly<Record<string, unknown>>) => boolean | number | Readonly<{ score?: number; passed?: boolean; reason?: string; confidence?: number; details?: Readonly<Record<string, unknown>> }> | Promise<boolean | number | Readonly<{ score?: number; passed?: boolean; reason?: string; confidence?: number; details?: Readonly<Record<string, unknown>> >>>) => unknown
   readonly has: (type: string) => boolean
   readonly evaluate: (metric: PortableMetric, context: Readonly<Record<string, unknown>>) => Readonly<Record<string, unknown>>
   readonly types: () => readonly string[]
@@ -160,6 +174,7 @@ export function runPortableCasePlan(options: {
   readonly fixtures?: readonly PortableFixture[]
   readonly stepRegistry?: ReturnType<typeof createStepRegistry>
   readonly metricRegistry?: ReturnType<typeof createMetricRegistry>
+  readonly judge?: (input: { readonly metric: Readonly<Record<string, unknown>>; readonly expected: unknown; readonly actual: unknown; readonly evidence: unknown; readonly signal: AbortSignal }) => Readonly<Record<string, unknown>> | Promise<Readonly<Record<string, unknown>>>
   readonly tools?: PortableMockTools
   readonly network?: PortableMockNetwork
   readonly database?: PortableTemporaryDatabase
@@ -178,4 +193,5 @@ export function runSuite(options: {
   readonly tools?: PortableMockTools
   readonly network?: PortableMockNetwork
   readonly database?: PortableTemporaryDatabase
+  readonly judge?: (input: { readonly metric: Readonly<Record<string, unknown>>; readonly expected: unknown; readonly actual: unknown; readonly evidence: unknown; readonly signal: AbortSignal }) => Readonly<Record<string, unknown>> | Promise<Readonly<Record<string, unknown>>>
 }): Promise<Readonly<Record<string, unknown>>>

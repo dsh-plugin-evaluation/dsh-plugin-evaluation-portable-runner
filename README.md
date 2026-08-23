@@ -31,7 +31,7 @@ The package is intentionally independent of DSH. A DSH integration or another ho
 ## Install
 
 ```bash
-npm install @dsh-plugin-evaluation/portable-runner@0.1.11
+npm install @dsh-plugin-evaluation/portable-runner@0.1.12
 ```
 
 Node.js 20 or newer is required.
@@ -145,6 +145,8 @@ return a failed report containing an `execution-failed` check instead.
 - `secrets` (default `[]`): values to detect and redact;
 - `fixtures` (default `[]`): setup and teardown hooks selected by the plan;
 - `stepRegistry` and `metricRegistry`: built-in or custom operations and checks;
+- `judge`: host-supplied callback used by `llm_judge` metrics (the runner does
+  not select a model or provider);
 - `limits.timeoutMs`: maximum wait for one plugin call;
 - `limits.maxSteps`: maximum plan steps, checked before workspace creation;
 - `limits.maxMetrics`: maximum checks, checked before execution;
@@ -227,11 +229,20 @@ names. Reporter registries additionally expose `render(name, report)`.
   "checks": [
     {
       "id": "expected-output",
-      "status": "passed",
       "passed": true,
-      "type": "output.equals"
+      "score": 1,
+      "weight": 1,
+      "required": true,
+      "details": { "type": "output.equals" }
     }
   ],
+  "score": {
+    "value": 1,
+    "scale": "0..1",
+    "totalWeight": 1,
+    "requiredPassed": true,
+    "passed": true
+  },
   "actualOutput": "safe",
   "exitCode": 0,
   "durationMs": 4,
@@ -256,6 +267,27 @@ names. Reporter registries additionally expose `render(name, report)`.
   }
 }
 ```
+
+Metrics may optionally declare `weight`, `required`, and `passScore`. A plan
+may also provide `scoring: { method: 'weighted-average', passScore, weights,
+required }`. Every check then includes a normalized `score` from `0` to `1`,
+and the report includes a weighted `score` summary. Existing plans without a
+scoring policy keep their all-checks-must-pass behavior.
+
+The built-in `llm_judge` metric uses the optional `judge` callback supplied by
+the host. The runner does not choose a model or provider:
+
+```js
+const report = await runPortableCasePlan({
+  plan,
+  judge: async ({ metric, expected, actual, evidence, signal }) => {
+    return modelJudge({ metric, expected, actual, evidence, signal })
+  },
+  runPlugin,
+})
+```
+
+The callback returns `{ score, passed?, reason?, confidence?, details? }`.
 
 `status` is `passed` when every metric passes and `failed` otherwise. Failed
 checks are listed in `checks`, with safe human-readable explanations in
@@ -294,8 +326,9 @@ Use a reporter registry separately to render a completed report, or pass
 reporter functions in the `reporters` object accepted by `runSuite`. A custom
 step receives the step object and the runner execution context. A custom metric
 receives `{ metric, output, files, execution, evidence }` and returns a
-boolean. A custom reporter receives the completed report and may return a
-string or a promise for a string.
+boolean, a `0..1` score, or `{ score, passed?, reason?, confidence?, details? }`.
+A custom reporter receives the completed report and may return a string or a
+promise for a string.
 
 ### Supported Portable Plan operations
 

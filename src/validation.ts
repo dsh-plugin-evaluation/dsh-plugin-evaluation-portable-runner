@@ -33,7 +33,20 @@ function validateMetric(value: unknown, ids: Set<string>): PortableMetric {
   if (['output.equals', 'output.contains', 'output.notContains', 'output-exact'].includes(value.type) && !('expected' in value)) throw new TypeError(`portable case metric ${value.id} expected value is required`)
   if (value.type === 'file-exists') requireString(value.path, `portable case metric ${value.id} path is required`)
   if (value.type === 'tool-calls' && (!Array.isArray(value.expected) || value.expected.some(item => typeof item !== 'string' || item.length === 0))) throw new TypeError(`portable case metric ${value.id} expected tool names are invalid`)
+  if (value.weight !== undefined && (typeof value.weight !== 'number' || !Number.isFinite(value.weight) || value.weight < 0)) throw new TypeError(`portable case metric ${value.id} weight must be non-negative`)
+  if (value.passScore !== undefined && (typeof value.passScore !== 'number' || !Number.isFinite(value.passScore) || value.passScore < 0 || value.passScore > 1)) throw new TypeError(`portable case metric ${value.id} passScore must be between 0 and 1`)
+  if (value.required !== undefined && typeof value.required !== 'boolean') throw new TypeError(`portable case metric ${value.id} required must be boolean`)
   return value as PortableMetric
+}
+
+function validateScoring(value: unknown, metricIds?: Set<string>) {
+  if (value === undefined) return undefined
+  if (!isRecord(value)) throw new TypeError('portable case scoring must be an object')
+  if (value.method !== undefined && value.method !== 'weighted-average') throw new TypeError('portable case scoring method is unsupported')
+  if (value.passScore !== undefined && (typeof value.passScore !== 'number' || !Number.isFinite(value.passScore) || value.passScore < 0 || value.passScore > 1)) throw new TypeError('portable case scoring passScore must be between 0 and 1')
+  if (value.weights !== undefined && (!isRecord(value.weights) || Object.values(value.weights).some(weight => typeof weight !== 'number' || !Number.isFinite(weight) || weight < 0) || (metricIds !== undefined && Object.keys(value.weights).some(id => !metricIds.has(id))))) throw new TypeError('portable case scoring weights are invalid')
+  if (value.required !== undefined && (!Array.isArray(value.required) || value.required.some(id => typeof id !== 'string') || new Set(value.required).size !== value.required.length || (metricIds !== undefined && value.required.some(id => !metricIds.has(id))))) throw new TypeError('portable case scoring required is invalid')
+  return value
 }
 
 export function validatePortableCasePlan(input: unknown): PortableCasePlan {
@@ -48,7 +61,8 @@ export function validatePortableCasePlan(input: unknown): PortableCasePlan {
   const metrics = input.metrics.map(metric => validateMetric(metric, ids))
   const steps = input.steps.map(validateStep)
   const setup = (input.setup ?? []).map(validateStep)
-  return { schemaVersion: 1, id: input.id, ...(typeof input.title === 'string' ? { title: input.title } : {}), ...(input.fixtures ? { fixtures: input.fixtures as string[] } : {}), setup, steps, metrics }
+  const scoring = validateScoring(input.scoring, ids)
+  return { schemaVersion: 1, id: input.id, ...(typeof input.title === 'string' ? { title: input.title } : {}), ...(input.fixtures ? { fixtures: input.fixtures as string[] } : {}), setup, steps, metrics, ...(scoring === undefined ? {} : { scoring }) }
 }
 
 export function validatePortableSuite(input: unknown) {

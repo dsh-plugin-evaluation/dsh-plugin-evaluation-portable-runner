@@ -42,6 +42,14 @@ Plans use `schemaVersion: 1`, a kebab-case `id`, at least one `steps` entry,
 and at least one `metrics` entry. `steps` and `metrics` are the canonical
 Runner contract; other input formats must be adapted by their caller.
 
+Each metric produces a normalized `score` in the `0..1` range and may declare
+`weight`, `required`, and `passScore`. A plan may provide a
+`scoring: { method: 'weighted-average', passScore, weights, required }`
+policy. The report includes the weighted score summary while preserving the
+legacy all-required-checks behavior when no policy is supplied. The built-in
+`llm_judge` metric delegates to a host-provided `judge` callback; model and
+provider selection stay outside Portable Runner.
+
 ## Security boundary
 
 Workspace paths are relative and cannot contain traversal or backslash escape

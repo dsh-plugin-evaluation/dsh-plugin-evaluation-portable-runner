@@ -10,7 +10,7 @@ import { validatePortableCasePlan } from './validation.js'
 import { createMetricRegistry } from './metrics.js'
 import { createStepRegistry, registerBuiltinSteps } from './steps.js'
 import { createMockNetwork, createMockTools, createTemporaryDatabase } from './adapters.js'
-import type { PortableCheck } from './contracts.js'
+import type { PortableCheck, PortableScoreSummary, PortableScoringPolicy } from './contracts.js'
 
 export type AnyRecord = Record<string, any>
 export type RunOptions = {
@@ -22,11 +22,22 @@ export type RunOptions = {
   fixtures?: any[]
   stepRegistry?: ReturnType<typeof createStepRegistry>
   metricRegistry?: ReturnType<typeof createMetricRegistry>
+  judge?: (input: { metric: AnyRecord; expected: unknown; actual: unknown; evidence: unknown; signal: AbortSignal }) => Promise<AnyRecord> | AnyRecord
   tools?: ReturnType<typeof createMockTools>
   network?: ReturnType<typeof createMockNetwork>
   database?: ReturnType<typeof createTemporaryDatabase>
   limits?: { readonly timeoutMs?: number; readonly maxSteps?: number; readonly maxMetrics?: number }
   errorMode?: 'throw' | 'report'
+}
+
+function scoreChecks(checks: PortableCheck[], scoring: PortableScoringPolicy | undefined): PortableScoreSummary {
+  const weights = scoring?.weights ?? {}
+  const normalized = checks.map(check => ({ ...check, weight: typeof weights[check.id] === 'number' ? (weights[check.id] as number) : check.weight, required: scoring?.required?.includes(check.id) ? true : check.required }))
+  const totalWeight = normalized.reduce((sum, check) => sum + Math.max(0, check.weight), 0)
+  const value = totalWeight === 0 ? 0 : normalized.reduce((sum, check) => sum + check.score * Math.max(0, check.weight), 0) / totalWeight
+  const requiredPassed = normalized.filter(check => check.required).every(check => check.passed)
+  const passed = requiredPassed && (scoring?.passScore === undefined ? normalized.filter(check => check.required).every(check => check.passed) : value >= scoring.passScore)
+  return { value, scale: '0..1', ...(scoring?.passScore === undefined ? {} : { passScore: scoring.passScore }), totalWeight, requiredPassed, passed }
 }
 
 async function runSetup(root: string, setup: readonly AnyRecord[], environment: Record<string, string>, stepRegistry: ReturnType<typeof createStepRegistry>) {
@@ -42,7 +53,7 @@ async function runSetup(root: string, setup: readonly AnyRecord[], environment: 
  * @throws {Error} When validation, limits, setup, or plugin execution fails
  * in the default `throw` error mode.
  */
-export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {}, provenance = {}, secrets = [], fixtures = [], stepRegistry = createStepRegistry(), metricRegistry = createMetricRegistry(), tools = createMockTools(), network = createMockNetwork(), database = createTemporaryDatabase(), limits = {}, errorMode = 'throw' }: RunOptions = {}) {
+export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {}, provenance = {}, secrets = [], fixtures = [], stepRegistry = createStepRegistry(), metricRegistry = createMetricRegistry(), tools = createMockTools(), network = createMockNetwork(), database = createTemporaryDatabase(), limits = {}, errorMode = 'throw', judge }: RunOptions = {}) {
   if (!plan || typeof plan !== 'object') throw new Error('portable case plan is required')
   if (typeof runPlugin !== 'function') throw new Error('portable case plan runPlugin is required')
   const executable = validatePortableCasePlan(plan)
@@ -67,7 +78,7 @@ export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {
   try {
     for (const fixture of activeFixtures) { await fixture.setup(context); preparedFixtures.push(fixture) }
     registerBuiltinSteps(stepRegistry)
-    const value: AnyRecord = { root, environment, workspace, executions: [] as AnyRecord[], session: { id: runId, messages: [] as AnyRecord[] }, tools, network, database, runPlugin, limits, toolCallStart: tools.calls.length, networkRequestStart: network.requests.length }
+    const value: AnyRecord = { root, environment, workspace, executions: [] as AnyRecord[], session: { id: runId, messages: [] as AnyRecord[] }, tools, network, database, runPlugin, limits, judge, signal: new AbortController().signal, toolCallStart: tools.calls.length, networkRequestStart: network.requests.length }
     let executionError: unknown
     try {
       await runSetup(root, executable.setup ?? [], environment, stepRegistry)
@@ -87,15 +98,16 @@ export async function runPortableCasePlan({ plan, runPlugin, baseEnvironment = {
     const toolCalls = tools.calls.slice(value.toolCallStart)
     const networkRequests = network.requests.slice(value.networkRequestStart)
     const evidence = { output, files, executions: value.executions, session: value.session, toolCalls, networkRequests, database, execution }
-    const checks: PortableCheck[] = executionError === undefined ? [] : [failedCheck('execution-failed', `插件执行失败: ${executionError instanceof Error ? executionError.message : String(executionError)}`, { code: 'execution-failed' })]
+    const checks: PortableCheck[] = executionError === undefined ? [] : [{ ...failedCheck('execution-failed', `插件执行失败: ${executionError instanceof Error ? executionError.message : String(executionError)}`, { code: 'execution-failed' }), score: 0, weight: 1, required: true }]
     for (const metric of executable.metrics) {
-      try { checks.push(await metricRegistry.evaluate(metric, { ...evidence, evidence, secrets })) }
-      catch (error) { checks.push(failedCheck(metric.id, `评测指标执行失败: ${error instanceof Error ? error.message : String(error)}`, { type: metric.type, code: 'metric-evaluation-failed' })) }
+      try { checks.push(await metricRegistry.evaluate(metric, { ...evidence, evidence, secrets, judge, signal: value.signal })) }
+      catch (error) { checks.push({ ...failedCheck(metric.id, `评测指标执行失败: ${error instanceof Error ? error.message : String(error)}`, { type: metric.type, code: 'metric-evaluation-failed' }), score: 0, weight: metric.weight ?? 1, required: metric.required !== false }) }
     }
-    const reasons = checks.filter(item => !item.passed).map(item => item.reason)
-    const status = reasons.length === 0 ? 'passed' : 'failed'
+    const score = scoreChecks(checks, executable.scoring)
+    const reasons = checks.filter(item => !item.passed).map(item => item.reason).filter((reason): reason is string => typeof reason === 'string')
+    const status = score.passed ? 'passed' : 'failed'
     const finishedAt = Date.now()
-    return { reportSchemaVersion: 1, reportId: runId, runId, status, reasons, checks, actualOutput: limitText(redactSecrets(output, secrets)), exitCode: execution.exitCode ?? 0, durationMs: finishedAt - startedAt, startedAt, finishedAt, summary: { status, totalCases: 1, passedCases: status === 'passed' ? 1 : 0, failedCases: status === 'failed' ? 1 : 0 }, provenance: { schemeId: plan.id, schemeVersion: plan.schemaVersion, ...provenance }, evidence: limitEvidence(redactSecrets({ files: limitList(files), toolCalls: limitList(toolCalls), networkRequests: limitList(networkRequests), timedOut: execution.timedOut === true, messages: limitList(value.session.messages), stdout: limitText(execution.stdout ?? ''), stderr: limitText(execution.stderr ?? ''), exitCode: execution.exitCode ?? 0 }, secrets)) }
+    return { reportSchemaVersion: 1, reportId: runId, runId, status, reasons, checks, score, actualOutput: limitText(redactSecrets(output, secrets)), exitCode: execution.exitCode ?? 0, durationMs: finishedAt - startedAt, startedAt, finishedAt, summary: { status, totalCases: 1, passedCases: status === 'passed' ? 1 : 0, failedCases: status === 'failed' ? 1 : 0 }, provenance: { schemeId: plan.id, schemeVersion: plan.schemaVersion, ...provenance }, evidence: limitEvidence(redactSecrets({ files: limitList(files), toolCalls: limitList(toolCalls), networkRequests: limitList(networkRequests), timedOut: execution.timedOut === true, messages: limitList(value.session.messages), stdout: limitText(execution.stdout ?? ''), stderr: limitText(execution.stderr ?? ''), exitCode: execution.exitCode ?? 0 }, secrets)) }
   } catch (error) {
     primaryError = error
     throw error

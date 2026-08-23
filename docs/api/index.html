@@ -1,5 +1,5 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Portable Runner API - v0.1.8</title><meta name="description" content="Documentation for Portable Runner API"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
-<div class="tsd-toolbar-contents container"><a href="index.html" class="title">Portable Runner API - v0.1.8</a>
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Portable Runner API - v0.1.12</title><meta name="description" content="Documentation for Portable Runner API"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">Portable Runner API - v0.1.12</a>
 <div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
 <ul role="listbox" id="tsd-search-results"></ul>
 <div id="tsd-search-status" aria-live="polite" aria-atomic="true">
@@ -7,8 +7,9 @@
 <div class="container container-main">
 <div class="col-content">
 <div class="tsd-page-title">
-<h1>Portable Runner API - v0.1.8</h1></div>
+<h1>Portable Runner API - v0.1.12</h1></div>
 <div class="tsd-panel tsd-typography"><h1 id="dsh-plugin-evaluationportable-runner" class="tsd-anchor-link">@dsh-plugin-evaluation/portable-runner<a href="#dsh-plugin-evaluationportable-runner" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p><a href="./">English</a> · <a href="media/README.zh-CN.md">简体中文</a> · <a href="media/README.ja.md">日本語</a></p>
 <p>Host-independent execution engine for DSH Portable Case Plans.</p>
 <h2 id="what-and-why" class="tsd-anchor-link">What and why<a href="#what-and-why" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Portable Case Plans describe a small, deterministic evaluation contract without binding the evaluation to DSH process startup, profiles, credentials, or a web server. This package owns the reusable part of that contract:</p>
@@ -33,7 +34,7 @@
 <li><strong><code>runPlugin</code> callback</strong>: the host-owned function that actually invokes the plugin.</li>
 </ul>
 <h2 id="install" class="tsd-anchor-link">Install<a href="#install" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">@dsh-plugin-evaluation/portable-runner@0.1.8</span>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">@dsh-plugin-evaluation/portable-runner@0.1.12</span>
 </code><button type="button">Copy</button></pre>
 
 <p>Node.js 20 or newer is required.</p>
@@ -71,11 +72,14 @@ CLI or protocol failure, and <code>124</code> means the external command timed o
 <p><code>steps</code> and <code>metrics</code> are the only supported plan fields. A plan must contain
 at least one step and one metric. Other input formats must be adapted by the
 caller before invoking the runner.</p>
-<p>The callback receives <code>{ input, cwd, env }</code>:</p>
+<p>The callback receives <code>{ input, cwd, env, session, signal }</code>:</p>
 <ul>
 <li><code>input</code> is the <code>plugin.prompt</code> input;</li>
 <li><code>cwd</code> is the plan's private temporary workspace; and</li>
 <li><code>env</code> is a copied environment containing <code>baseEnvironment</code> plus plan setup values.</li>
+<li><code>session</code> contains the current multi-step conversation history; and</li>
+<li><code>signal</code> is aborted when the configured timeout expires, allowing hosts to
+cancel underlying work promptly.</li>
 </ul>
 <p>The result contains <code>status</code>, structured <code>checks</code>, non-sensitive <code>reasons</code>, <code>actualOutput</code>, <code>exitCode</code>, and <code>durationMs</code>.</p>
 <p>Execution can be bounded with optional limits:</p>
@@ -139,6 +143,16 @@ names. Reporter registries additionally expose <code>render(name, report)</code>
 <pre><code class="json"><span class="hl-1">{</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;reportSchemaVersion&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;reportId&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;uuid&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;runId&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;uuid&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;status&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;passed&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;reasons&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;checks&quot;</span><span class="hl-1">: [</span><br/><span class="hl-1">    {</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;id&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;expected-output&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;status&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;passed&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;passed&quot;</span><span class="hl-1">: </span><span class="hl-4">true</span><span class="hl-1">,</span><br/><span class="hl-1">      </span><span class="hl-10">&quot;type&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;output.equals&quot;</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">  ],</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;actualOutput&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;safe&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;exitCode&quot;</span><span class="hl-1">: </span><span class="hl-5">0</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;durationMs&quot;</span><span class="hl-1">: </span><span class="hl-5">4</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;startedAt&quot;</span><span class="hl-1">: </span><span class="hl-5">1710000000000</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;finishedAt&quot;</span><span class="hl-1">: </span><span class="hl-5">1710000000004</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;summary&quot;</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;status&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;passed&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;totalCases&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;passedCases&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;failedCases&quot;</span><span class="hl-1">: </span><span class="hl-5">0</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;provenance&quot;</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;schemeId&quot;</span><span class="hl-1">: </span><span class="hl-2">&quot;portable-smoke&quot;</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;schemeVersion&quot;</span><span class="hl-1">: </span><span class="hl-5">1</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-10">&quot;evidence&quot;</span><span class="hl-1">: {</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;files&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;toolCalls&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;networkRequests&quot;</span><span class="hl-1">: [],</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;timedOut&quot;</span><span class="hl-1">: </span><span class="hl-4">false</span><span class="hl-1">,</span><br/><span class="hl-1">    </span><span class="hl-10">&quot;messages&quot;</span><span class="hl-1">: []</span><br/><span class="hl-1">  }</span><br/><span class="hl-1">}</span>
 </code><button type="button">Copy</button></pre>
 
+<p>Metrics may optionally declare <code>weight</code>, <code>required</code>, and <code>passScore</code>. A plan
+may also provide <code>scoring: { method: 'weighted-average', passScore, weights, required }</code>. Every check then includes a normalized <code>score</code> from <code>0</code> to <code>1</code>,
+and the report includes a weighted <code>score</code> summary. Existing plans without a
+scoring policy keep their all-checks-must-pass behavior.</p>
+<p>The built-in <code>llm_judge</code> metric uses the optional <code>judge</code> callback supplied by
+the host. The runner does not choose a model or provider:</p>
+<pre><code class="js"><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-8">report</span><span class="hl-1"> = </span><span class="hl-6">await</span><span class="hl-1"> </span><span class="hl-0">runPortableCasePlan</span><span class="hl-1">({</span><br/><span class="hl-1">  </span><span class="hl-7">plan</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-0">judge</span><span class="hl-7">:</span><span class="hl-1"> </span><span class="hl-4">async</span><span class="hl-1"> ({ </span><span class="hl-7">metric</span><span class="hl-1">, </span><span class="hl-7">expected</span><span class="hl-1">, </span><span class="hl-7">actual</span><span class="hl-1">, </span><span class="hl-7">evidence</span><span class="hl-1">, </span><span class="hl-7">signal</span><span class="hl-1"> }) </span><span class="hl-4">=&gt;</span><span class="hl-1"> {</span><br/><span class="hl-1">    </span><span class="hl-6">return</span><span class="hl-1"> </span><span class="hl-0">modelJudge</span><span class="hl-1">({ </span><span class="hl-7">metric</span><span class="hl-1">, </span><span class="hl-7">expected</span><span class="hl-1">, </span><span class="hl-7">actual</span><span class="hl-1">, </span><span class="hl-7">evidence</span><span class="hl-1">, </span><span class="hl-7">signal</span><span class="hl-1"> })</span><br/><span class="hl-1">  },</span><br/><span class="hl-1">  </span><span class="hl-7">runPlugin</span><span class="hl-1">,</span><br/><span class="hl-1">})</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The callback returns <code>{ score, passed?, reason?, confidence?, details? }</code>.</p>
 <p><code>status</code> is <code>passed</code> when every metric passes and <code>failed</code> otherwise. Failed
 checks are listed in <code>checks</code>, with safe human-readable explanations in
 <code>reasons</code>. Evidence is intended for diagnostics and reporting; hosts should
@@ -196,7 +210,7 @@ actions fail before the plugin callback is invoked.</p>
 </ul>
 <p>The runner does not promise that a plugin callback is safe. Do not pass untrusted callbacks without an appropriate host sandbox.</p>
 <h2 id="development" class="tsd-anchor-link">Development<a href="#development" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>This is an independent Git/npm repository. The companion DSH integration remains in <a href="media/dsh-agent-observe"><code>dsh-agent-observe</code></a>, which can provide the callback and DSH-specific lifecycle without being imported by this package.</p>
+<p>This is an independent Git/npm repository. The companion DSH integration remains in <a href="https://github.com/dsh-plugin-evaluation/dsh-agent-observe"><code>dsh-agent-observe</code></a>, which can provide the callback and DSH-specific lifecycle without being imported by this package.</p>
 <p>The package includes a CLI as well as the library API. The public package
 boundary is the package root and the explicit <code>./package.json</code> metadata export.</p>
 <p>Generate the complete API reference directly from the TypeScript source:</p>
@@ -259,7 +273,7 @@ a rejected traversal plan.</p>
 <li><a href="#testing-and-verification"><span>Testing and verification</span></a></li>
 <li><a href="#license"><span>License</span></a></li></ul></div></details></div>
 <div class="site-menu">
-<nav class="tsd-navigation"><a href="modules.html">Portable Runner API - v0.1.8</a>
+<nav class="tsd-navigation"><a href="modules.html">Portable Runner API - v0.1.12</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
 <li>Loading...</li></ul></nav></div></div></div><footer>
 <p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>

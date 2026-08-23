@@ -214,7 +214,7 @@ console.log(report.status) // passed</code></pre></div>
 
         <section class="doc-section searchable" id="extensions" data-search="extension custom step metric reporter registry createStepRegistry createMetricRegistry createReporterRegistry">
           <div class="section-heading"><span class="section-number">06</span><div><p class="eyebrow">Make it yours</p><h2>Customization</h2></div></div>
-          <p>Extend the vocabulary without forking the execution loop. Registries are small, explicit, and easy to inspect.</p>
+          <p>只有当内置能力不够时才需要这里。每个 Registry（注册表）都是一个“名称 → 实现”的清单：你注册一次，就能在计划中通过名称使用它。</p>
           <div class="code-block"><button class="copy-button" type="button" data-copy="extension-example">Copy</button><pre id="extension-example"><code>const steps = createStepRegistry().register(
   'custom.prepare',
   (step, context) => { context.environment.PREPARED = String(step.value) },
@@ -229,7 +229,23 @@ const reporters = createReporterRegistry().register(
   'text',
   report => `${report.status}: ${report.summary?.passedCases ?? 0} passed`,
 )</code></pre></div>
-          <div class="api-grid three" id="registries"><article class="api-card"><span class="api-kind">STEPS</span><h3>createStepRegistry</h3><p>Register bounded operations that receive a step and execution context.</p><p class="source-line"><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L122">Source ↗</a></p></article><article class="api-card"><span class="api-kind">METRICS</span><h3>createMetricRegistry</h3><p>Register boolean evaluators over output and collected evidence.</p><p class="source-line"><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L129">Source ↗</a></p></article><article class="api-card"><span class="api-kind">REPORTERS</span><h3>createReporterRegistry</h3><p>Render JSON, Markdown, JUnit, or a custom report format.</p><p class="source-line"><a class="source-link" href="https://github.com/dsh-plugin-evaluation/dsh-plugin-evaluation-portable-runner/blob/main/src/index.d.ts#L139">Source ↗</a></p></article></div>
+          <div class="api-grid three" id="registries">
+            <article class="api-card"><span class="api-kind">自定义步骤</span><h3>createStepRegistry</h3><p>给计划增加 Runner 没有内置的“动作”。例如把配置写入执行环境。</p><pre><code>const steps = createStepRegistry().register(
+  'config.set',
+  (step, ctx) =&gt; { ctx.environment[step.name] = step.value },
+)
+// 计划中使用：{ op: 'config.set', name: 'MODE', value: 'test' }</code></pre><p class="source-line">适合：需要新的准备动作或工具动作时。</p></article>
+            <article class="api-card"><span class="api-kind">自定义评测</span><h3>createMetricRegistry</h3><p>给结果增加 Runner 没有内置的“判断规则”。返回 <code>true</code> 表示通过。</p><pre><code>const metrics = createMetricRegistry().register(
+  'output.startsWith',
+  ({ output, metric }) =&gt; output.startsWith(metric.expected),
+)
+// 指标中使用：{ id: 'prefix', type: 'output.startsWith', expected: 'OK' }</code></pre><p class="source-line">适合：需要业务专属断言时。</p></article>
+            <article class="api-card"><span class="api-kind">自定义报告</span><h3>createReporterRegistry</h3><p>把评测报告转换成你的系统需要的文本格式。内置 JSON、Markdown、JUnit 已经够用时不需要注册。</p><pre><code>const reporters = createReporterRegistry().register(
+  'summary',
+  report =&gt; `${report.status}: ${report.summary.passedCases} passed`,
+)
+const text = await reporters.render('summary', report)</code></pre><p class="source-line">适合：需要接入内部报告系统时。</p></article>
+          </div>
         </section>
 
         <section class="doc-section searchable" id="safety" data-search="security safety workspace credentials sandbox host callback">
