@@ -194,9 +194,12 @@ test('runs a suite with fixture lifecycle and reporter output', async () => {
   })
 
   const reports = []
+  const progress = []
   const result = await runSuite({
     suite,
     reporters: { json: report => reports.push(report) },
+    onCaseStart: value => progress.push(['start', value.caseId]),
+    onCaseComplete: value => progress.push(['complete', value.caseId, value.result.status]),
     async runPlugin({ env }) { return { output: env.FIXTURE_VALUE } },
   })
 
@@ -204,6 +207,7 @@ test('runs a suite with fixture lifecycle and reporter output', async () => {
   assert.deepEqual(lifecycle, ['setup', 'teardown'])
   assert.equal(reports.length, 1)
   assert.equal(reports[0].summary.totalCases, 1)
+  assert.deepEqual(progress, [['start', 'quality-case'], ['complete', 'quality-case', 'passed']])
 })
 
 test('validates suite identity and duplicate cases before execution', async () => {

@@ -116,6 +116,27 @@ export interface PortableSuite {
   readonly cases: readonly PortableCase[]
 }
 
+export interface PortableCaseProgress {
+  readonly caseId: string
+  readonly title: string
+  readonly index: number
+  readonly total: number
+  readonly result?: PortableCaseResult
+}
+
+export interface PortableSuiteRunOptions {
+  readonly onCaseStart?: (progress: Omit<PortableCaseProgress, 'result'>) => void | Promise<void>
+  readonly onCaseComplete?: (progress: PortableCaseProgress) => void | Promise<void>
+}
+
+export function runSuite(options: {
+  readonly suite: PortableSuite
+  readonly runPlugin: (input: unknown) => Promise<PortablePluginExecution>
+  readonly reporters?: Readonly<Record<string, (report: unknown) => unknown | Promise<unknown>>>
+  readonly onCaseStart?: PortableSuiteRunOptions['onCaseStart']
+  readonly onCaseComplete?: PortableSuiteRunOptions['onCaseComplete']
+}): Promise<Readonly<Record<string, unknown>>>
+
 export function defineFixture(input: {
   readonly id: string
   readonly setup: (context: PortableRunnerContext) => Promise<void> | void

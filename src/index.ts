@@ -40,12 +40,15 @@ export function defineSuite({ id, version = '1.0.0', fixtures = [], cases = [] }
   return Object.freeze({ schemaVersion: 1, id, version, fixtures, cases })
 }
 
-export async function runSuite({ suite, runPlugin, reporters = {}, baseEnvironment = {}, secrets = [], stepRegistry, metricRegistry, tools, network, database, judge }: any = {}) {
+export async function runSuite({ suite, runPlugin, reporters = {}, baseEnvironment = {}, secrets = [], stepRegistry, metricRegistry, tools, network, database, judge, onCaseStart, onCaseComplete }: any = {}) {
   validatePortableSuite(suite)
   const fixtures = suite.fixtures ?? []
   const cases = []
-  for (const testCase of suite.cases) {
-    cases.push(await runPortableCasePlan({ plan: testCase, runPlugin, fixtures, baseEnvironment, secrets, stepRegistry, metricRegistry, tools, network, database, judge, provenance: { suiteId: suite.id, suiteVersion: suite.version, caseId: testCase.id } }))
+  for (const [index, testCase] of suite.cases.entries()) {
+    await onCaseStart?.({ caseId: testCase.id, title: testCase.title ?? testCase.id, index, total: suite.cases.length })
+    const result = await runPortableCasePlan({ plan: testCase, runPlugin, fixtures, baseEnvironment, secrets, stepRegistry, metricRegistry, tools, network, database, judge, provenance: { suiteId: suite.id, suiteVersion: suite.version, caseId: testCase.id } })
+    cases.push(result)
+    await onCaseComplete?.({ caseId: testCase.id, title: testCase.title ?? testCase.id, index, total: suite.cases.length, result })
   }
   const passed = cases.every(item => item.status === 'passed')
   const totalWeight = cases.length
